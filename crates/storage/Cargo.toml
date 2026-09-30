@@ -13,8 +13,10 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
+bytes = { workspace = true }
 crossbeam = { workspace = true }
 feldera-types = { workspace = true }
+futures = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 libc = { workspace = true }
 rkyv = { workspace = true, features = ["std", "size_64", "validation", "uuid"] }
@@ -22,6 +24,7 @@ object_store = { workspace = true, features = ["aws", "gcp", "azure", "http"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror =  { workspace = true }
+url = { workspace = true }
 uuid = { workspace = true, features = ["v7"] }
 inventory = { workspace = true }
 tracing = { workspace = true }

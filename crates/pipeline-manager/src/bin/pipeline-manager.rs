@@ -6,8 +6,6 @@ use colored::Colorize;
 use feldera_observability as observability;
 use pipeline_manager::runner::local_runner::LocalRunner;
 use pipeline_manager::{all_in_one, ensure_default_crypto_provider, init_fd_limit};
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 fn main() -> anyhow::Result<()> {
     ensure_default_crypto_provider();
@@ -30,7 +28,6 @@ fn main() -> anyhow::Result<()> {
         .block_on(async {
             let matches =
                 all_in_one::augment_args(Command::new("Pipeline manager CLI")).get_matches();
-            all_in_one::run::<LocalRunner>(&matches, Arc::new(RwLock::new(None)), |config| config)
-                .await
+            all_in_one::run::<LocalRunner>(&matches, |config| config).await
         })
 }

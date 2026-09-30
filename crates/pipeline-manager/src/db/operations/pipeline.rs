@@ -2050,7 +2050,7 @@ pub(crate) async fn get_next_rust_compilation(
 /// queries above (the two `_needing_*_compilation_clear` lists and the two
 /// `get_next_*_compilation` pickers) across all shards and platform versions:
 /// the count is greater than zero if and only if some compiler worker would
-/// act. It drives compiler autoscaling in the enterprise runner.
+/// act. It drives compiler autoscaling in the runner.
 pub(crate) async fn count_pipelines_needing_compilation(
     txn: &Transaction<'_>,
 ) -> Result<u64, DBError> {

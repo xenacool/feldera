@@ -37,15 +37,19 @@ macro_rules! count_tts {
 #[macro_export]
 macro_rules! build_star_join_index_func {
     ($join_func:ident, $prefix_cursor:ident, $trace_cursors:ident, $($vals:expr),+ $(,)?) => {{
-        use $crate::{dynamic::{Erase, DowncastTrait}, trace::Cursor};
+        use $crate::{
+            dynamic::{Erase, DowncastTrait},
+            operator::dynamic::multijoin::wrap_star_join_func,
+            trace::Cursor,
+        };
 
         let mut ok: Box<DynData> = Box::<OK>::default().erase_box();
         let mut ov: Box<DynData> = Box::<OV>::default().erase_box();
         let join_func = $join_func.clone();
 
-        Box::new(move |$prefix_cursor, $trace_cursors, cb| {
+        wrap_star_join_func(move |$prefix_cursor, $trace_cursors, cb| {
             for (k, v) in join_func(
-                unsafe { $prefix_cursor.key().downcast() },
+                unsafe { $prefix_cursor.key().downcast::<K>() },
                 $($vals),+
             ) {
                 *unsafe { ok.downcast_mut() } = k;
@@ -59,15 +63,18 @@ macro_rules! build_star_join_index_func {
 #[macro_export]
 macro_rules! build_star_join_flatmap_func {
     ($join_func:ident, $prefix_cursor:ident, $trace_cursors:ident, $($vals:expr),+ $(,)?) => {{
-        use $crate::dynamic::{Erase, DowncastTrait};
-        use $crate::trace::Cursor;
+        use $crate::{
+            dynamic::{Erase, DowncastTrait},
+            operator::dynamic::multijoin::wrap_star_join_func,
+            trace::Cursor,
+        };
 
         let mut ov: Box<DynData> = Box::<OV>::default().erase_box();
         let join_func = $join_func.clone();
 
-        Box::new(move |$prefix_cursor, $trace_cursors, cb| {
+        wrap_star_join_func(move |$prefix_cursor, $trace_cursors, cb| {
             for v in join_func(
-                unsafe { $prefix_cursor.key().downcast() },
+                unsafe { $prefix_cursor.key().downcast::<K>() },
                 $($vals),+
             ) {
                 *unsafe { ov.downcast_mut() } = v;
@@ -80,15 +87,18 @@ macro_rules! build_star_join_flatmap_func {
 #[macro_export]
 macro_rules! build_star_join_func {
     ($join_func:ident, $prefix_cursor:ident, $trace_cursors:ident, $($vals:expr),+ $(,)?) => {{
-        use $crate::dynamic::{Erase, DowncastTrait};
-        use $crate::trace::Cursor;
+        use $crate::{
+            dynamic::{Erase, DowncastTrait},
+            operator::dynamic::multijoin::wrap_star_join_func,
+            trace::Cursor,
+        };
 
         let mut ov: Box<DynData> = Box::<OV>::default().erase_box();
         let join_func = $join_func.clone();
 
-        Box::new(move |$prefix_cursor, $trace_cursors, cb| {
+        wrap_star_join_func(move |$prefix_cursor, $trace_cursors, cb| {
             let v = join_func(
-                unsafe { $prefix_cursor.key().downcast() },
+                unsafe { $prefix_cursor.key().downcast::<K>() },
                 $($vals),+
             );
             *unsafe { ov.downcast_mut() } = v;

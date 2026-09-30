@@ -23,20 +23,13 @@ use crate::controller::checkpoint::{
 };
 use crate::controller::journal::Journal;
 use crate::controller::stats::{InputEndpointMetrics, OutputEndpointMetrics, ProcessedRecords};
-use crate::controller::sync::{
-    CHECKPOINT_SYNC_PULL_DURATION_SECONDS, CHECKPOINT_SYNC_PULL_FAILURES,
-    CHECKPOINT_SYNC_PULL_SUCCESS, CHECKPOINT_SYNC_PULL_TRANSFER_SPEED,
-    CHECKPOINT_SYNC_PULL_TRANSFERRED_BYTES, CHECKPOINT_SYNC_PUSH_DURATION_SECONDS,
-    CHECKPOINT_SYNC_PUSH_FAILURES, CHECKPOINT_SYNC_PUSH_SUCCESS,
-    CHECKPOINT_SYNC_PUSH_TRANSFER_SPEED, CHECKPOINT_SYNC_PUSH_TRANSFERRED_BYTES, SYNCHRONIZER,
-};
 use crate::panic::N_PANICS;
 use crate::server::metrics::{HistogramDiv, LabelStack, MetricsFormatter, MetricsWriter, Value};
 use crate::server::{InitializationState, ServerState};
 use crate::transport::Step;
 use crate::transport::clock::now_endpoint_config;
 use crate::transport::{input_transport_config_to_endpoint, output_transport_config_to_endpoint};
-use crate::util::{LongOperationWarning, missing_pipeline_identity_message, run_on_thread_pool};
+use crate::util::{LongOperationWarning, run_on_thread_pool};
 use crate::{
     CircuitCatalog, Encoder, InputConsumer, OutputConsumer, OutputEndpoint, ParseError,
     PipelineError, PipelineState, TransportInputEndpoint,
@@ -89,7 +82,7 @@ use feldera_types::adapter_stats::{
     ConnectorHealth, ExternalControllerStatus, ExternalInputEndpointStatus,
     ExternalOutputEndpointStatus,
 };
-use feldera_types::checkpoint::{CheckpointActivity, CheckpointMetadata, HostInfo};
+use feldera_types::checkpoint::{CheckpointActivity, CheckpointMetadata};
 use feldera_types::coordination::{
     self, AdHocCatalog, AdHocTableType, CheckpointCoordination, Completion, StepAction, StepInputs,
     StepRequest, StepStatus, TransactionCoordination,
@@ -153,7 +146,6 @@ mod journal;
 #[cfg(target_os = "macos")]
 mod samply_spawn;
 mod stats;
-pub(crate) mod sync;
 mod validate;
 
 #[cfg(test)]
@@ -185,8 +177,7 @@ pub use feldera_types::config::{
     RuntimeConfig, TransportConfig,
 };
 use feldera_types::config::{
-    DEFAULT_MAX_WORKER_BATCH_SIZE, DevTweaks, FileBackendConfig, FtConfig, FtModel,
-    OutputBufferConfig, PipelineIdentity, StorageBackendConfig, SyncConfig,
+    DEFAULT_MAX_WORKER_BATCH_SIZE, DevTweaks, FtConfig, FtModel, OutputBufferConfig,
 };
 use feldera_types::constants::{STATE_FILE, STEPS_FILE};
 use feldera_types::format::json::{JsonFlavor, JsonParserConfig, JsonUpdateFormat};
@@ -298,92 +289,6 @@ impl ControllerBuilder {
         })
     }
 
-    /// Checks if we need to pull a checkpoint from S3.
-    /// Useful to set the pipeline `InitializationState` to `DownloadingCheckpoint`.
-    pub(crate) fn is_pull_necessary(&self) -> Option<&SyncConfig> {
-        #[cfg(feature = "feldera-enterprise")]
-        {
-            self.storage
-                .as_ref()
-                .and_then(|s| sync::is_pull_necessary(s))
-        }
-
-        #[cfg(not(feature = "feldera-enterprise"))]
-        None
-    }
-
-    /// Pulls the latest checkpoint just once from S3.
-    pub(crate) fn pull_once(&self, _sync: &SyncConfig) -> Result<(), ControllerError> {
-        #[cfg(feature = "feldera-enterprise")]
-        if let Some(storage) = &self.storage {
-            let pipeline = self.config.pipeline_identity().ok_or_else(|| {
-                ControllerError::checkpoint_fetch_error(missing_pipeline_identity_message(
-                    "cannot pull checkpoint from object store",
-                ))
-            })?;
-            return sync::pull_once(storage, _sync, None, &pipeline);
-        };
-
-        Ok(())
-    }
-
-    /// Continuously pull the latest checkpoint from S3.
-    pub(crate) fn continuous_pull<F>(&self, _is_activated: F) -> Result<(), ControllerError>
-    where
-        F: Fn() -> bool,
-    {
-        #[cfg(feature = "feldera-enterprise")]
-        if let Some(storage) = &self.storage {
-            let pipeline = self.config.pipeline_identity().ok_or_else(|| {
-                ControllerError::checkpoint_fetch_error(missing_pipeline_identity_message(
-                    "cannot pull checkpoint from object store",
-                ))
-            })?;
-            sync::continuous_pull(storage, _is_activated, None, &pipeline)
-        } else {
-            Err(ControllerError::InvalidStandby(
-                "standby mode requires storage configuration",
-            ))
-        }
-
-        #[cfg(not(feature = "feldera-enterprise"))]
-        Err(ControllerError::EnterpriseFeature("standby"))
-    }
-
-    /// Takes ownership of the sync bucket as the pipeline starts, if the sync
-    /// config sets `take_bucket_ownership`.
-    ///
-    /// Every way of starting a pipeline opens it through exactly one of the
-    /// `open_*` methods below: a single host after its initial pull, a
-    /// standby pipeline after activation, and a multihost host after the
-    /// coordinator activates it.  Calling this from them takes ownership once
-    /// per run, before any push, and never mid-run.  Every host of a
-    /// multihost pipeline takes ownership; the hosts share one identity, so
-    /// they agree on the owner.
-    ///
-    /// Ownership changes before the checkpoint is opened, so a pipeline that
-    /// then fails to start keeps the bucket.
-    ///
-    /// # Returns
-    /// `Ok(())` if ownership was taken or not requested; otherwise the error
-    /// that fails startup.
-    fn take_bucket_ownership(&self) -> Result<(), ControllerError> {
-        #[cfg(feature = "feldera-enterprise")]
-        if let Some(storage) = &self.storage
-            && let Some(sync) = self.sync_config()
-            && sync.take_bucket_ownership
-        {
-            let pipeline = self.config.pipeline_identity().ok_or_else(|| {
-                ControllerError::checkpoint_push_error(missing_pipeline_identity_message(
-                    "cannot take ownership of object store bucket",
-                ))
-            })?;
-            sync::take_bucket_ownership(storage.backend.clone(), &sync, &pipeline)?;
-        }
-
-        Ok(())
-    }
-
     pub(crate) fn with_layout(self, layout: Layout) -> Self {
         Self {
             layout: Some(layout),
@@ -397,7 +302,6 @@ impl ControllerBuilder {
         self,
         checkpoint_uuid: Uuid,
     ) -> Result<ControllerInit, ControllerError> {
-        self.take_bucket_ownership()?;
         ControllerInit::with_checkpoint(
             self.layout,
             self.config.clone(),
@@ -409,14 +313,12 @@ impl ControllerBuilder {
     /// Creates a [ControllerInit] that will start fresh without using a
     /// checkpoint.
     pub(crate) fn open_without_checkpoint(self) -> Result<ControllerInit, ControllerError> {
-        self.take_bucket_ownership()?;
         ControllerInit::without_checkpoint(self.layout, self.config.clone(), self.storage.clone())
     }
 
     /// Creates a [ControllerInit] that will start from the latest checkpoint,
     /// if there is one, or start fresh without a checkpoint otherwise.
     pub(crate) fn open_latest_checkpoint(self) -> Result<ControllerInit, ControllerError> {
-        self.take_bucket_ownership()?;
         ControllerInit::with_latest_checkpoint(
             self.layout,
             self.config.clone(),
@@ -426,17 +328,6 @@ impl ControllerBuilder {
 
     pub(crate) fn storage(&self) -> Option<Arc<dyn StorageBackend>> {
         self.storage.as_ref().map(|storage| storage.backend.clone())
-    }
-
-    /// Returns the sync configuration, if one is present in the storage backend.
-    pub(crate) fn sync_config(&self) -> Option<SyncConfig> {
-        self.storage.as_ref().and_then(|s| {
-            if let StorageBackendConfig::File(ref file_cfg) = s.options.backend {
-                file_cfg.sync.clone()
-            } else {
-                None
-            }
-        })
     }
 }
 
@@ -551,9 +442,6 @@ pub type CheckpointCallbackFn = Box<dyn FnOnce(Result<Checkpoint, Arc<Controller
 /// Type of the callback argument to [`Controller::start_suspend`].
 pub type SuspendCallbackFn = Box<dyn FnOnce(Result<(), Arc<ControllerError>>) + Send>;
 
-/// Type of the callback argument to [`Controller::start_sync_checkpoint`].
-pub type SyncCheckpointCallbackFn = Box<dyn FnOnce(Result<(), Arc<ControllerError>>) + Send>;
-
 /// Rebalance callback argument to [`Controller::rebalance`].
 pub type RebalanceCallbackFn = Box<dyn FnOnce(Result<(), ControllerError>) + Send>;
 
@@ -568,7 +456,6 @@ enum Command {
     JsonProfile(JsonProfileCallbackFn),
     Checkpoint(CheckpointCallbackFn),
     Suspend(SuspendCallbackFn),
-    SyncCheckpoint((uuid::Uuid, SyncCheckpointCallbackFn)),
     Rebalance(RebalanceCallbackFn),
     StartCompaction(StartCompactionCallbackFn),
 }
@@ -712,9 +599,6 @@ impl Command {
                 callback(Err(Arc::new(ControllerError::ControllerExit)))
             }
             Command::Suspend(callback) => callback(Err(Arc::new(ControllerError::ControllerExit))),
-            Command::SyncCheckpoint((_, callback)) => {
-                callback(Err(Arc::new(ControllerError::ControllerExit)))
-            }
             Command::Rebalance(callback) => callback(Err(ControllerError::ControllerExit)),
             Command::StartCompaction(callback) => callback(Err(ControllerError::ControllerExit)),
         }
@@ -868,9 +752,6 @@ impl Controller {
         })
     }
 
-    pub(crate) fn last_checkpoint_sync(&self) -> LastCheckpoint {
-        self.inner.last_checkpoint_sync()
-    }
 
     pub fn lir(&self) -> &LirCircuit {
         &self.inner.lir
@@ -1457,31 +1338,6 @@ impl Controller {
         Ok(output)
     }
 
-    /// Triggers a sync checkpoint operation. `cb` will be called when it
-    /// completes.
-    ///
-    /// The callback-based nature of this function makes it useful in
-    /// asynchronous contexts.
-    pub fn start_sync_checkpoint(&self, checkpoint: uuid::Uuid, cb: SyncCheckpointCallbackFn) {
-        self.inner
-            .send_command(Command::SyncCheckpoint((checkpoint, cb)));
-    }
-
-    pub async fn async_sync_checkpoint(
-        &self,
-        checkpoint: uuid::Uuid,
-    ) -> Result<(), Arc<ControllerError>> {
-        let (sender, receiver) = oneshot::channel();
-        self.start_sync_checkpoint(
-            checkpoint,
-            Box::new(move |result| {
-                if sender.send(result).is_err() {
-                    error!("sync_checkpoint result could not be sent");
-                }
-            }),
-        );
-        reply_or_controller_exit(receiver.await)
-    }
 
     /// Checkpoints the pipeline.
     ///
@@ -1839,67 +1695,6 @@ impl Controller {
             "Sizes in bytes of blocks written to storage.",
             labels,
             &WRITE_BLOCKS_BYTES.snapshot(),
-        );
-
-        metrics.histogram(
-            "checkpoint_sync_push_transferred_bytes",
-            "Bytes transferred when pushing a checkpoint.",
-            labels,
-            &CHECKPOINT_SYNC_PUSH_TRANSFERRED_BYTES.snapshot(),
-        );
-        metrics.histogram(
-            "checkpoint_sync_pull_transferred_bytes",
-            "Bytes transferred when pulling a checkpoint.",
-            labels,
-            &CHECKPOINT_SYNC_PULL_TRANSFERRED_BYTES.snapshot(),
-        );
-        metrics.histogram(
-            "checkpoint_sync_push_duration_seconds",
-            "Time taken to push a checkpoint to object store in seconds.",
-            labels,
-            &CHECKPOINT_SYNC_PUSH_DURATION_SECONDS.snapshot(),
-        );
-        metrics.histogram(
-            "checkpoint_sync_pull_duration_seconds",
-            "Time taken to pull a checkpoint from object store in seconds.",
-            labels,
-            &CHECKPOINT_SYNC_PULL_DURATION_SECONDS.snapshot(),
-        );
-        metrics.histogram(
-            "checkpoint_sync_push_transfer_speed_bytes_per_second",
-            "Transfer speed when pushing a checkpoint, in bytes per second.",
-            labels,
-            &CHECKPOINT_SYNC_PUSH_TRANSFER_SPEED.snapshot(),
-        );
-        metrics.histogram(
-            "checkpoint_sync_pull_transfer_speed_bytes_per_second",
-            "Transfer speed when pulling a checkpoint, in bytes per second.",
-            labels,
-            &CHECKPOINT_SYNC_PULL_TRANSFER_SPEED.snapshot(),
-        );
-        metrics.counter(
-            "checkpoint_sync_push_success",
-            "Number of checkpoints pushed successfully.",
-            labels,
-            &CHECKPOINT_SYNC_PUSH_SUCCESS,
-        );
-        metrics.counter(
-            "checkpoint_sync_push_failures",
-            "Number of failures when pushing a checkpoint.",
-            labels,
-            &CHECKPOINT_SYNC_PUSH_FAILURES,
-        );
-        metrics.counter(
-            "checkpoint_sync_pull_success",
-            "Number of checkpoints pulled successfully.",
-            labels,
-            &CHECKPOINT_SYNC_PULL_SUCCESS,
-        );
-        metrics.counter(
-            "checkpoint_sync_pull_failures",
-            "Number of failures when pulling a checkpoint.",
-            labels,
-            &CHECKPOINT_SYNC_PULL_FAILURES,
         );
 
         metrics.gauge(
@@ -2597,189 +2392,10 @@ pub(crate) fn write_custom_metrics<F>(
     }
 }
 
-/// Represents a background thread that pushes checkpoints to object storage.
-struct CheckpointSyncThread {
-    uuid: uuid::Uuid,
-    storage: Arc<dyn StorageBackend>,
-    config: SyncConfig,
-    host_info: Option<HostInfo>,
-    /// Identity of this pipeline, used to enforce S3 bucket ownership on push.
-    pipeline: PipelineIdentity,
-}
-
-impl CheckpointSyncThread {
-    fn run(self) -> Result<(), Arc<ControllerError>> {
-        match SYNCHRONIZER.push(
-            self.uuid,
-            self.storage,
-            self.config,
-            self.host_info,
-            self.pipeline,
-        ) {
-            Err(err) => {
-                CHECKPOINT_SYNC_PUSH_FAILURES.fetch_add(1, Ordering::Relaxed);
-                Err(Arc::new(ControllerError::checkpoint_push_error(
-                    err.to_string(),
-                )))
-            }
-            Ok(metrics) => {
-                CHECKPOINT_SYNC_PUSH_SUCCESS.fetch_add(1, Ordering::Relaxed);
-                if let Some(metrics) = metrics {
-                    CHECKPOINT_SYNC_PUSH_TRANSFER_SPEED.record(metrics.speed);
-                    CHECKPOINT_SYNC_PUSH_DURATION_SECONDS.record(metrics.duration.as_secs());
-                    CHECKPOINT_SYNC_PUSH_TRANSFERRED_BYTES.record(metrics.bytes);
-                }
-                Ok(())
-            }
-        }
-    }
-}
-
-/// Represents a running checkpoint sync operation.
-enum RunningCheckpointSync {
-    Error(uuid::Uuid, Arc<ControllerError>),
-    Waiting(
-        uuid::Uuid,
-        JoinHandle<()>,
-        oneshot::Receiver<Result<(), Arc<ControllerError>>>,
-    ),
-    Done(uuid::Uuid),
-}
-
-impl RunningCheckpointSync {
-    fn new(circuit: &mut CircuitThread, uuid: uuid::Uuid) -> Self {
-        Span::new("fg-checkpoint-sync")
-            .in_scope(|| Self::start(circuit, uuid))
-            .unwrap_or_else(|e| Self::Error(uuid, e))
-    }
-
-    fn uuid(&self) -> uuid::Uuid {
-        match self {
-            Self::Error(uuid, _) => *uuid,
-            Self::Waiting(uuid, _, _) => *uuid,
-            Self::Done(uuid) => *uuid,
-        }
-    }
-
-    fn start(circuit: &mut CircuitThread, uuid: uuid::Uuid) -> Result<Self, Arc<ControllerError>> {
-        let pipeline = circuit
-            .controller
-            .status
-            .pipeline_config
-            .pipeline_identity()
-            .ok_or_else(|| {
-                Arc::new(ControllerError::checkpoint_push_error(
-                    missing_pipeline_identity_message("cannot push checkpoints to object store"),
-                ))
-            })?;
-
-        let Some((_, options)) = circuit.controller.status.pipeline_config.storage() else {
-            return Err(Arc::new(ControllerError::storage_error(
-                "cannot sync checkpoints when storage is disabled",
-                dbsp::storage::backend::StorageError::StorageDisabled,
-            )));
-        };
-
-        let feldera_types::config::StorageBackendConfig::File(ref file_cfg) = options.backend
-        else {
-            return Err(Arc::new(ControllerError::storage_error(
-                "syncing checkpoint is only supported with file backend",
-                dbsp::storage::backend::StorageError::BackendNotSupported(Box::new(
-                    options.backend.clone(),
-                )),
-            )));
-        };
-
-        let FileBackendConfig {
-            sync: Some(ref sync),
-            ..
-        } = **file_cfg
-        else {
-            return Err(Arc::new(ControllerError::storage_error(
-                "sync config is not set; cannot push checkpoints",
-                dbsp::storage::backend::StorageError::BackendNotSupported(Box::new(
-                    options.backend.clone(),
-                )),
-            )));
-        };
-
-        let (sender, receiver) = oneshot::channel();
-        let thread = CheckpointSyncThread {
-            uuid,
-            storage: circuit.storage.as_ref().cloned().ok_or(Arc::new(
-                ControllerError::checkpoint_push_error(
-                    "cannot push checkpoints to object store: storage is set to None".to_owned(),
-                ),
-            ))?,
-            config: sync.to_owned(),
-            host_info: circuit.controller.layout.host_info(),
-            pipeline,
-        };
-        let unparker = circuit.parker.unparker().clone();
-        let join_handle = std::thread::Builder::new()
-            .name(String::from("feldera-checkpoint-sync"))
-            .spawn(move || {
-                let result = Span::new("bg-checkpoint-sync").in_scope(|| thread.run());
-                let _ = sender.send(result);
-                unparker.unpark();
-            })
-            .unwrap();
-        Ok(Self::Waiting(uuid, join_handle, receiver))
-    }
-
-    fn poll(&mut self, circuit: &mut CircuitThread) -> Option<Result<(), Arc<ControllerError>>> {
-        let uuid = self.uuid();
-
-        match replace(self, Self::Done(uuid)) {
-            Self::Error(_, error) => Some(Err(error)),
-            Self::Waiting(uuid, join_handle, mut receiver) => match receiver.try_recv() {
-                Ok(result) => {
-                    join_handle.join().unwrap();
-
-                    // Only update last_sync if the checkpoint sync succeeded.
-                    if result.is_ok() {
-                        let mut last_sync = circuit.controller.last_checkpoint_sync.lock().unwrap();
-                        *last_sync = LastCheckpoint {
-                            timestamp: Instant::now(),
-                            id: Some(uuid),
-                        };
-                    }
-
-                    Some(result)
-                }
-                Err(TryRecvError::Empty) => {
-                    *self = Self::Waiting(uuid, join_handle, receiver);
-                    None
-                }
-                Err(TryRecvError::Closed) => unreachable!(
-                    "RunningCheckpointSync::Waiting should have been replaced by RunningCheckpointSync::Done"
-                ),
-            },
-            Self::Done(_) => Some(Ok(())),
-        }
-    }
-}
-
-enum SyncCheckpointRequest {
-    Scheduled(uuid::Uuid),
-    Requested {
-        uuid: uuid::Uuid,
-        cb: SyncCheckpointCallbackFn,
-    },
-}
-
-impl SyncCheckpointRequest {
-    fn uuid(&self) -> uuid::Uuid {
-        match self {
-            Self::Scheduled(uuid) => *uuid,
-            Self::Requested { uuid, .. } => *uuid,
-        }
-    }
-}
-
 #[derive(Clone)]
 pub(crate) struct LastCheckpoint {
     pub(crate) timestamp: Instant,
+    #[allow(dead_code)]
     pub(crate) id: Option<uuid::Uuid>,
 }
 
@@ -2807,11 +2423,6 @@ struct CircuitThread {
     checkpoint_delay_warning: Option<LongOperationWarning>,
     checkpoint_requests: Vec<CheckpointRequest>,
     running_checkpoint: Option<RunningCheckpoint>,
-
-    sync_checkpoint_requests: Vec<SyncCheckpointRequest>,
-
-    /// Active checkpoint sync.
-    running_checkpoint_sync: Option<RunningCheckpointSync>,
 
     /// Storage backend for writing checkpoints.
     storage: Option<Arc<dyn StorageBackend>>,
@@ -3331,8 +2942,6 @@ impl CircuitThread {
             checkpoint_delay_warning: None,
             checkpoint_requests: Vec::new(),
             running_checkpoint: None,
-            running_checkpoint_sync: None,
-            sync_checkpoint_requests: Vec::new(),
             step,
             step_sender,
             checkpoint_sender,
@@ -3427,12 +3036,6 @@ impl CircuitThread {
                 self.checkpoint();
             }
 
-            self.poll_running_checkpoint_sync();
-
-            if self.sync_checkpoint_requested() {
-                self.sync_checkpoint();
-            }
-
             if self.controller.state() == PipelineState::Terminated {
                 break Ok(());
             }
@@ -3473,7 +3076,6 @@ impl CircuitThread {
             let step_selection = self.next_step_selection(coordination_request.as_ref());
             match trigger.trigger(
                 self.last_checkpoint(),
-                self.last_checkpoint_sync(),
                 // `replay_finalize` keeps forcing steps after the journal is
                 // exhausted until a step refreshes the ad-hoc snapshot with the
                 // replayed state (see `step` and `clear_restoring`).
@@ -3487,7 +3089,6 @@ impl CircuitThread {
                 // post-cutover snapshot-refresh step.
                 self.concurrent_phase != ConcurrentPhase::Inactive,
                 self.checkpoint_requested(),
-                self.sync_checkpoint_requested(),
                 &step_selection,
                 coordination_request,
                 self.step,
@@ -3506,9 +3107,6 @@ impl CircuitThread {
                     }
                 }
                 Action::Checkpoint => self.checkpoint_requests.push(CheckpointRequest::Scheduled),
-                Action::SyncCheckpoint(chk) => self
-                    .sync_checkpoint_requests
-                    .push(SyncCheckpointRequest::Scheduled(chk)),
                 Action::Park(Some(deadline)) => self.parker.park_deadline(deadline),
                 Action::Park(None) => self.parker.park(),
             }
@@ -4051,10 +3649,6 @@ impl CircuitThread {
         self.controller.last_checkpoint()
     }
 
-    fn last_checkpoint_sync(&self) -> LastCheckpoint {
-        self.controller.last_checkpoint_sync()
-    }
-
     fn update_last_checkpoint(&self, result: &Result<Checkpoint, ControllerError>) {
         *self.controller.last_checkpoint.lock().unwrap() = LastCheckpoint {
             timestamp: Instant::now(),
@@ -4293,13 +3887,6 @@ impl CircuitThread {
                 Command::Suspend(reply_callback) => {
                     self.checkpoint_requests
                         .push(CheckpointRequest::SuspendCommand(reply_callback));
-                }
-                Command::SyncCheckpoint((uuid, reply_callback)) => {
-                    self.sync_checkpoint_requests
-                        .push(SyncCheckpointRequest::Requested {
-                            uuid,
-                            cb: reply_callback,
-                        });
                 }
                 Command::Rebalance(reply_callback) => reply_callback(
                     self.circuit
@@ -4860,60 +4447,11 @@ impl CircuitThread {
         ) && self.controller.replay_open_transaction_id() != Some(next)
     }
 
-    fn sync_checkpoint_requested(&self) -> bool {
-        !self.sync_checkpoint_requests.is_empty()
-    }
-
     #[allow(unused)]
     pub fn list_checkpoints(&mut self) -> Result<Vec<CheckpointMetadata>, Arc<ControllerError>> {
         self.circuit
             .list_checkpoints()
             .map_err(|e| Arc::new(ControllerError::dbsp_error(e)))
-    }
-
-    fn poll_running_checkpoint_sync(&mut self) {
-        fn process_sync_requests(
-            requests: &mut Vec<SyncCheckpointRequest>,
-            uuid: uuid::Uuid,
-            result: Result<(), Arc<ControllerError>>,
-        ) {
-            for request in requests.extract_if(.., |x| x.uuid() == uuid) {
-                if let SyncCheckpointRequest::Requested { cb, .. } = request {
-                    (cb)(result.clone());
-                }
-            }
-        }
-
-        let Some(mut running_sync) = self.running_checkpoint_sync.take() else {
-            return;
-        };
-
-        match running_sync {
-            RunningCheckpointSync::Waiting(uuid, _, _) => {
-                let Some(result) = running_sync.poll(self) else {
-                    self.running_checkpoint_sync = Some(running_sync);
-                    return;
-                };
-
-                process_sync_requests(&mut self.sync_checkpoint_requests, uuid, result);
-            }
-            RunningCheckpointSync::Error(uuid, result) => {
-                process_sync_requests(&mut self.sync_checkpoint_requests, uuid, Err(result));
-            }
-            RunningCheckpointSync::Done(uuid) => {
-                process_sync_requests(&mut self.sync_checkpoint_requests, uuid, Ok(()));
-            }
-        };
-    }
-
-    fn sync_checkpoint(&mut self) {
-        let Some(req) = self.sync_checkpoint_requests.first() else {
-            return;
-        };
-
-        if self.running_checkpoint_sync.is_none() {
-            self.running_checkpoint_sync = Some(RunningCheckpointSync::new(self, req.uuid()));
-        }
     }
 }
 
@@ -5558,9 +5096,6 @@ struct StepTrigger {
 
     /// Time between automatic checkpoints.
     checkpoint_interval: Option<Duration>,
-
-    /// Time between automatic checkpoint syncs.
-    sync_interval: Option<Duration>,
 }
 
 /// Action for the controller to take.
@@ -5574,9 +5109,6 @@ enum Action {
 
     /// Step the circuit.
     Step,
-
-    /// Synchronize a checkpoint to object storage.
-    SyncCheckpoint(uuid::Uuid),
 }
 
 impl StepTrigger {
@@ -5586,14 +5118,6 @@ impl StepTrigger {
         let max_buffering_delay = Duration::from_micros(config.max_buffering_delay_usecs);
         let min_batch_size_records = config.min_batch_size_records;
         let checkpoint_interval = config.fault_tolerance.checkpoint_interval();
-        let sync_interval = config.storage.as_ref().and_then(|s| match &s.backend {
-            StorageBackendConfig::File(file) => file
-                .sync
-                .as_ref()
-                .and_then(|s| s.push_interval)
-                .map(Duration::from_secs),
-            _ => None,
-        });
 
         Self {
             controller,
@@ -5601,14 +5125,12 @@ impl StepTrigger {
             max_buffering_delay,
             min_batch_size_records,
             checkpoint_interval,
-            sync_interval,
         }
     }
 
     /// Determines when to trigger the next step, given:
     ///
     /// - The metadata about the last checkpoint.
-    /// - The metadata about the last sync checkpoint.
     /// - Whether we're currently `replaying`.
     /// - Whether the pipeline is currently `bootstrapping`.
     /// - Whether a checkpoint has already been requested.
@@ -5619,12 +5141,10 @@ impl StepTrigger {
     fn trigger(
         &mut self,
         last_checkpoint: LastCheckpoint,
-        last_sync: LastCheckpoint,
         replaying: bool,
         bootstrapping: bool,
         concurrent_active: bool,
         checkpoint_requested: bool,
-        sync_checkpoint_requested: bool,
         step_selection: &StepSelection,
         coordination_request: Option<StepRequest>,
         step: Step,
@@ -5639,11 +5159,6 @@ impl StepTrigger {
         } else {
             None
         };
-
-        // Time of the next checkpoint sync.
-        let next_checkpoint_sync = self
-            .sync_interval
-            .map(|interval| last_sync.timestamp + interval);
 
         let now = Instant::now();
 
@@ -5674,13 +5189,6 @@ impl StepTrigger {
             Some(Action::Step)
         } else if timer_expired(next_checkpoint, now) && !checkpoint_requested {
             Some(Action::Checkpoint)
-        } else if timer_expired(next_checkpoint_sync, now)
-            && !sync_checkpoint_requested
-            && let Some(chk) = last_checkpoint.id
-            && !chk.is_nil()
-            && Some(chk) != last_sync.id
-        {
-            Some(Action::SyncCheckpoint(chk))
         } else if self.controller.status.unset_step_requested() {
             // This is after checking the checkpoint timer so that step requests
             // can't indefinitely delay a checkpoint.
@@ -7276,7 +6784,6 @@ impl TransactionInfo {
 pub struct ControllerInner {
     pub status: Arc<ControllerStatus>,
     last_checkpoint: Mutex<LastCheckpoint>,
-    last_checkpoint_sync: Mutex<LastCheckpoint>,
     secrets_dir: PathBuf,
     /// Directory holding the pipeline's storage, or `None` when the backend
     /// keeps its data in an object store or in memory.
@@ -7403,7 +6910,6 @@ impl ControllerInner {
                 command_sender,
                 catalog: Arc::new(catalog),
                 last_checkpoint: Default::default(),
-                last_checkpoint_sync: Default::default(),
                 lir,
                 trace_snapshots: Default::default(),
                 next_input_id: Atomic::new(0),
@@ -7543,10 +7049,6 @@ impl ControllerInner {
 
     fn last_checkpoint(&self) -> LastCheckpoint {
         self.last_checkpoint.lock().unwrap().clone()
-    }
-
-    fn last_checkpoint_sync(&self) -> LastCheckpoint {
-        self.last_checkpoint_sync.lock().unwrap().clone()
     }
 
     fn get_transaction_number(&self) -> u64 {
@@ -9037,9 +8539,6 @@ impl ControllerInner {
     pub fn can_checkpoint(&self) -> Result<(), SuspendError> {
         // First, check for reasons we can't checkpoint.
         let mut permanent = Vec::new();
-        #[cfg(not(feature = "feldera-enterprise"))]
-        #[cfg(not(test))]
-        permanent.push(PermanentSuspendError::EnterpriseFeature);
         if self.status.pipeline_config.global.storage.is_none() {
             permanent.push(PermanentSuspendError::StorageRequired);
         }
@@ -9930,13 +9429,7 @@ impl RunningCheckpoint {
         checkpoint: Checkpoint,
         circuit: &mut CircuitThread,
     ) -> Result<Checkpoint, ControllerError> {
-        if let Err(error) = circuit.circuit.gc_checkpoint(
-            circuit
-                .sync_checkpoint_requests
-                .iter()
-                .map(|c| c.uuid())
-                .collect::<HashSet<_>>(),
-        ) {
+        if let Err(error) = circuit.circuit.gc_checkpoint(HashSet::new()) {
             error!("error removing old checkpoints: {error}");
         }
 

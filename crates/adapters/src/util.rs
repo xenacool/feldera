@@ -218,12 +218,6 @@ pub(crate) fn truncate_ellipse_middle(s: &str, len: usize) -> Cow<'_, str> {
     .into()
 }
 
-pub(crate) fn missing_pipeline_identity_message(operation: &str) -> String {
-    format!(
-        "{operation}: pipeline has no system-assigned name (config.name), which is necessary to verify ownership"
-    )
-}
-
 /// For logging with a non-constant level.  From
 /// <https://github.com/tokio-rs/tracing/issues/2730>
 #[macro_export]

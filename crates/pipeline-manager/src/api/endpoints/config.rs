@@ -3,7 +3,6 @@ use actix_web::{
     HttpMessage, HttpRequest, HttpResponse, get,
     web::{Data as WebData, ReqData},
 };
-use feldera_cloud1_client::license::DisplaySchedule;
 use serde::Serialize;
 use utoipa::ToSchema;
 
@@ -14,20 +13,7 @@ use crate::db::types::role::Role;
 use crate::db::types::tenant::TenantId;
 use crate::db::types::user::UserMembership;
 use crate::error::ManagerError;
-use crate::license::{LicenseCheck, LicenseValidity};
 use crate::unstable_features;
-
-#[derive(Serialize, ToSchema)]
-pub(crate) struct UpdateInformation {
-    /// Latest version corresponding to the edition
-    pub latest_version: String,
-    /// Whether the current version matches the latest version
-    pub is_latest_version: bool,
-    /// URL that navigates the user to instructions on how to update their deployment's version
-    pub instructions_url: String,
-    /// Suggested frequency of reminding the user about updating
-    pub remind_schedule: DisplaySchedule,
-}
 
 /// Information about the build of the platform.
 #[derive(Serialize, ToSchema)]
@@ -70,18 +56,10 @@ impl BuildInformation {
 
 #[derive(Serialize, ToSchema)]
 pub(crate) struct Configuration {
-    /// PostHog telemetry key. Empty when disabled.
-    pub posthog: String,
-    /// ConceptualHQ analytics key. Empty when disabled.
-    pub conceptualhq: String,
-    /// Product Fruits workspace code for in-app onboarding. Empty when disabled.
-    pub product_fruits: String,
-    /// Feldera edition: "Open source", "Enterprise" or "EnterpriseDev"
-    pub edition: String,
-    /// The version corresponding to the type of `edition`.
+    /// Platform version.
     /// Format is `x.y.z`.
     pub version: String,
-    /// Specific revision corresponding to the edition `version` (e.g., git commit hash).
+    /// Specific revision corresponding to the `version` (e.g., git commit hash).
     pub revision: String,
     /// Specific revision corresponding to the default runtime version of the platform (e.g., git commit hash).
     pub runtime_revision: String,
@@ -89,10 +67,6 @@ pub(crate) struct Configuration {
     pub unstable_features: Option<String>,
     /// URL that navigates to the changelog of the current version
     pub changelog_url: String,
-    /// Information about the checked Enterprise license
-    pub license_validity: Option<LicenseValidity>,
-    /// Information about whether a new version is available for the corresponding edition
-    pub update_info: Option<UpdateInformation>,
     /// Information about the build environment
     pub build_info: BuildInformation,
     /// Build source: "ci" for GitHub Actions builds, "source" for local builds
@@ -100,7 +74,7 @@ pub(crate) struct Configuration {
 }
 
 impl Configuration {
-    pub(crate) async fn gather(state: &ServerState) -> Self {
+    pub(crate) async fn gather(_state: &ServerState) -> Self {
         let version = env!("CARGO_PKG_VERSION").to_string();
         let mut revision = env!("FELDERA_PLATFORM_VERSION_SUFFIX");
         if revision.is_empty() {
@@ -109,25 +83,14 @@ impl Configuration {
             revision = env!("VERGEN_GIT_SHA");
         }
         let runtime_revision = env!("VERGEN_GIT_SHA");
-        let license_check = LicenseCheck::validate(state).await.unwrap_or_default();
 
         Configuration {
-            posthog: state.config.telemetry.clone(),
-            conceptualhq: state.config.conceptualhq.clone(),
-            product_fruits: state.config.product_fruits.clone(),
-            edition: crate::edition().to_string(),
             version: version.clone(),
             revision: revision.to_string(),
             runtime_revision: runtime_revision.to_string(),
             unstable_features: unstable_features()
                 .map(|features| features.iter().cloned().collect::<Vec<&str>>().join(",")),
-            changelog_url: if cfg!(feature = "feldera-enterprise") {
-                "https://docs.feldera.com/changelog/".to_string()
-            } else {
-                format!("https://github.com/feldera/feldera/releases/tag/v{version}")
-            },
-            license_validity: license_check.map(|v| v.check_outcome),
-            update_info: None,
+            changelog_url: format!("https://github.com/feldera/feldera/releases/tag/v{version}"),
             build_info: BuildInformation::from_env(),
             build_source: env!("FELDERA_BUILD_ORIGIN").to_string(),
         }

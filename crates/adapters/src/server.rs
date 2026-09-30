@@ -11,7 +11,6 @@ use crate::static_compile::catalog::OUTPUT_MAPPING;
 use crate::transport::http::HttpOutputFormat;
 use crate::util::{
     LongOperationWarning, RateLimitCheckResult, TokenBucketRateLimiter,
-    missing_pipeline_identity_message,
 };
 use crate::{Catalog, ControllerStatus, dyn_event};
 use crate::{
@@ -62,8 +61,7 @@ use feldera_types::adapter_stats::{
 };
 use feldera_types::checkpoint::{
     CheckpointFailure, CheckpointPullStatus, CheckpointResponse, CheckpointStatus,
-    CheckpointStatusQuery, CheckpointSyncFailure, CheckpointSyncResponse, CheckpointSyncStatus,
-    HostInfo,
+    CheckpointStatusQuery, CheckpointSyncStatus, HostInfo,
 };
 use feldera_types::completion_token::{
     CompletionStatusArgs, CompletionStatusResponse, CompletionTokenResponse,
@@ -116,7 +114,6 @@ use std::{
     borrow::Cow,
     net::TcpListener,
     sync::{Arc, Mutex, Weak},
-    thread,
 };
 use tokio::spawn;
 use tokio::sync::Notify;
@@ -280,6 +277,7 @@ pub(crate) struct ServerState {
     /// Used by the `/coordination/checkpoint/pull` endpoint to identify the
     /// pipeline when checking S3 bucket ownership.  `None` when the pipeline has
     /// no system-assigned name.
+    #[allow(dead_code)]
     pipeline_identity: Option<PipelineIdentity>,
 
     /// Incarnation UUID.
@@ -295,11 +293,13 @@ pub(crate) struct ServerState {
     ///
     /// Used by the `/coordination/checkpoint/pull` endpoint to pull checkpoints
     /// from object storage on behalf of the multihost coordinator.
+    #[allow(dead_code)]
     sync_config: Option<SyncConfig>,
 
     /// Host identity of this pod within a multihost pipeline, derived from
     /// `--host-id` and `config.global.hosts` at startup.  `None` for solo
     /// pipelines.
+    #[allow(dead_code)]
     host_info: Option<HostInfo>,
 
     /// Status of the most recent background checkpoint pull.
@@ -797,11 +797,6 @@ pub fn run_server(
         circuit_factory: CircuitFactoryFunc,
         runtime: &actix_web::rt::Runtime,
     ) -> Result<WebData<ServerState>, ControllerError> {
-        #[cfg(not(feature = "feldera-enterprise"))]
-        if config.global.fault_tolerance.is_enabled() {
-            return Err(ControllerError::EnterpriseFeature("fault tolerance"));
-        }
-
         // Initiate creating the controller so that we can get access to storage,
         // which is needed to determine the initial state.
         let builder = ControllerBuilder::new(config)?;
@@ -917,14 +912,14 @@ pub fn run_server(
             args.deployment_id,
             config.pipeline_identity(),
             builder.storage().clone(),
-            builder.sync_config(),
+            None,
             host_info,
         ));
 
         // Initialize the pipeline in a separate thread.  On success, this thread
         // will create a `Controller` instance and store it in `state.controller`.
         let storage = builder.storage().clone();
-        thread::Builder::new()
+        std::thread::Builder::new()
             .name("pipeline-init".to_string())
             .spawn({
                 let state = state.clone();
@@ -1330,27 +1325,12 @@ fn do_bootstrap(
             RuntimeDesiredStatus::Running
             | RuntimeDesiredStatus::Paused
             | RuntimeDesiredStatus::Suspended => {
-                // First, if necessary, download the latest checkpoint from S3.
-                if let Some(sync) = builder.is_pull_necessary() {
-                    builder.pull_once(sync)?;
-                }
                 break builder.open_latest_checkpoint();
             }
             RuntimeDesiredStatus::Standby => {
-                state.set_phase(PipelinePhase::Initializing(InitializationState::Standby));
-
-                builder
-                    .continuous_pull(|| state.desired_status() != RuntimeDesiredStatus::Standby)?;
-
-                let mut desired_status = state.desired_status.lock().unwrap();
-                if *desired_status == RuntimeDesiredStatus::Standby {
-                    warn!(
-                        "Exited standby mode without specifying a new desired state, defaulting to paused"
-                    );
-                    *desired_status = RuntimeDesiredStatus::Paused;
-                    state.desired_status_change.notify_waiters();
-                }
-                break builder.open_latest_checkpoint();
+                return Err(ControllerError::not_supported(
+                    "standby mode is being re-implemented via distributed consensus",
+                ));
             }
         }
     }?;
@@ -2375,153 +2355,34 @@ fn get_checkpoints(state: &ServerState) -> Result<VecDeque<CheckpointMetadata>, 
 /// Starts syncing the checkpoint named by `uuid` to object storage, in the
 /// background.
 ///
-/// A sync already running for `uuid` coalesces with it: this starts no second
-/// sync and reports no error, because the sync the caller asked for is under
-/// way.  Both callers answer `202 Accepted` either way, so a retried request
-/// means "the sync is in progress", not "a fresh sync started".
-fn sync_checkpoint(state: WebData<ServerState>, controller: Controller, uuid: Uuid) {
-    /// Tracks state for an ongoing checkpoint sync.
-    struct CheckpointSyncGuard {
-        state: WebData<ServerState>,
-        uuid: Option<Uuid>,
-    }
-
-    impl CheckpointSyncGuard {
-        /// Tries to create a new `CheckpointSyncGuard` for `uuid`, and succeeds if
-        /// there is not already one for that UUID.
-        fn try_new(state: &WebData<ServerState>, uuid: Uuid) -> Option<Self> {
-            state
-                .sync_checkpoint_status()
-                .running
-                .insert(uuid)
-                .then(|| Self {
-                    state: state.clone(),
-                    uuid: Some(uuid),
-                })
-        }
-
-        /// Records the checkpoint sync of `uuid` as complete.
-        fn completed(mut self, result: Result<(), Arc<ControllerError>>) {
-            // Prevent the `Drop` implementation from trying to delete the UUID
-            // again.
-            let uuid = self
-                .uuid
-                .take()
-                .expect("CheckpointSyncGuard has not yet been dropped");
-
-            let mut status = self.state.sync_checkpoint_status();
-
-            // Remove `uuid` from the running sync.
-            if !status.running.remove(&uuid) {
-                error!("checkpoint sync for {uuid} unexpectedly already completed");
-            }
-
-            // Record the outcome.
-            //
-            // `success` and `failure` each name the last sync to reach that
-            // outcome, so re-syncing a checkpoint would otherwise leave the same
-            // UUID in both with nothing to say which came last.  Recording an
-            // outcome therefore clears the opposite one when it names `uuid`: the
-            // newer result replaces the stale one.
-            match result {
-                Ok(()) => {
-                    status.success = Some(uuid);
-                    status.failure.take_if(|failure| failure.uuid == uuid);
-                }
-                Err(e) => {
-                    status.failure = Some(CheckpointSyncFailure {
-                        uuid,
-                        error: e.to_string(),
-                    });
-                    if status.success == Some(uuid) {
-                        status.success = None;
-                    }
-                }
-            }
-        }
-    }
-
-    impl Drop for CheckpointSyncGuard {
-        fn drop(&mut self) {
-            if let Some(uuid) = self.uuid.take() {
-                self.state.sync_checkpoint_status().running.remove(&uuid);
-            }
-        }
-    }
-
-    if let Some(guard) = CheckpointSyncGuard::try_new(&state, uuid) {
-        spawn(async move {
-            let result = controller.async_sync_checkpoint(uuid).await;
-            guard.completed(result);
-        });
-    }
-}
-
 #[post("/checkpoint/sync")]
-async fn checkpoint_sync(state: WebData<ServerState>) -> Result<HttpResponse, PipelineError> {
-    let controller = state.controller()?;
-
-    if controller.layout().is_multihost() {
-        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-            message: "checkpoint sync is not supported directly on multihost pipelines; \
-                      sync requests must go through the coordinator via \
-                      `/coordination/checkpoint/push`"
-                .to_string(),
-            error_code: "400".into(),
-            details: serde_json::Value::Null,
-        }));
-    }
-
-    let Some(last_checkpoint) = get_checkpoints(&state)?.back().map(|c| c.uuid) else {
-        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-            message: "no checkpoints found; make a POST request to `/checkpoint` to make a new checkpoint".to_string(),
-            error_code: "400".into(),
-            details: serde_json::Value::Null,
-        }));
-    };
-
-    let incarnation_uuid = state.incarnation_uuid;
-    sync_checkpoint(state, controller, last_checkpoint);
-
-    Ok(HttpResponse::Accepted().json(CheckpointSyncResponse::new(
-        last_checkpoint,
-        incarnation_uuid,
-    )))
+async fn checkpoint_sync(_state: WebData<ServerState>) -> Result<HttpResponse, PipelineError> {
+    Ok(HttpResponse::NotImplemented().json(ErrorResponse {
+        message: "checkpoint synchronization is being re-implemented via object_store and distributed consensus".to_string(),
+        error_code: "501".into(),
+        details: serde_json::Value::Null,
+    }))
 }
 
 /// Request body for `POST /coordination/checkpoint/push`.
 #[derive(Deserialize)]
 struct CoordinationPushBody {
     /// UUID of the local checkpoint to push to object storage.
+    #[allow(unused)]
     uuid: Uuid,
 }
 
 /// Triggers a push of a specific checkpoint to object storage.
-///
-/// Called by the multihost coordinator to direct each pod to sync a particular
-/// checkpoint UUID.  The coordinator selects the same logical step for all pods
-/// before calling this endpoint, ensuring all pods' remote catalogs converge
-/// on a consistent snapshot.
 #[post("/coordination/checkpoint/push")]
 async fn coordination_checkpoint_push(
-    state: WebData<ServerState>,
-    body: web::Json<CoordinationPushBody>,
+    _state: WebData<ServerState>,
+    _body: web::Json<CoordinationPushBody>,
 ) -> Result<HttpResponse, PipelineError> {
-    let uuid = body.into_inner().uuid;
-    let controller = state.controller()?;
-
-    if get_checkpoints(&state)?.iter().all(|c| c.uuid != uuid) {
-        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-            message: format!("checkpoint '{uuid}' not found in local storage"),
-            error_code: "400".into(),
-            details: serde_json::Value::Null,
-        }));
-    }
-
-    let incarnation_uuid = state.incarnation_uuid;
-    sync_checkpoint(state, controller, uuid);
-
-    Ok(HttpResponse::Accepted().json(CheckpointSyncResponse::new(uuid, incarnation_uuid)))
+    Ok(HttpResponse::NotImplemented().json(ErrorResponse {
+        message: "coordination checkpoint push is being re-implemented via object_store and distributed consensus".to_string(),
+        error_code: "501".into(),
+        details: serde_json::Value::Null,
+    }))
 }
 
 /// Checks a client-supplied incarnation UUID (from `CheckpointStatusQuery`).
@@ -2577,24 +2438,12 @@ async fn checkpoints(state: WebData<ServerState>) -> Result<HttpResponse, Pipeli
 
 /// List checkpoints available in the configured remote object storage.
 #[get("/checkpoints/remote")]
-async fn remote_checkpoints(state: WebData<ServerState>) -> Result<HttpResponse, PipelineError> {
-    let sync = state
-        .sync_config
-        .clone()
-        .ok_or_else(|| PipelineError::ControllerError {
-            error: Arc::new(ControllerError::checkpoint_fetch_error(
-                "listing remote checkpoints requires sync to be configured".to_string(),
-            )),
-        })?;
-
-    let result = spawn_blocking(move || crate::controller::sync::list_remote_checkpoints(&sync))
-        .await
-        .map_err(|e| PipelineError::ControllerError {
-            error: Arc::new(ControllerError::checkpoint_fetch_error(format!("{e}"))),
-        })?
-        .map_err(|e| PipelineError::ControllerError { error: Arc::new(e) })?;
-
-    Ok(HttpResponse::Ok().json(result))
+async fn remote_checkpoints(_state: WebData<ServerState>) -> Result<HttpResponse, PipelineError> {
+    Ok(HttpResponse::NotImplemented().json(ErrorResponse {
+        message: "remote checkpoint listing is being re-implemented via object_store".to_string(),
+        error_code: "501".into(),
+        details: serde_json::Value::Null,
+    }))
 }
 
 #[get("/checkpoint/sync_status")]
@@ -2603,14 +2452,8 @@ async fn sync_checkpoint_status(
     params: web::Query<CheckpointStatusQuery>,
 ) -> Result<HttpResponse, PipelineError> {
     check_incarnation_uuid(&state, params.incarnation_uuid)?;
-    let mut sync_status = state.sync_checkpoint_status();
-
-    let controller = state.controller()?;
-    if let Some(chk) = controller.last_checkpoint_sync().id {
-        sync_status.periodic = Some(chk);
-    }
-
-    Ok(HttpResponse::Ok().json(sync_status.clone()))
+    let sync_status = state.sync_checkpoint_status().clone();
+    Ok(HttpResponse::Ok().json(sync_status))
 }
 
 /// Suspends the pipeline and terminate the circuit.
@@ -3265,6 +3108,7 @@ async fn coordination_checkpoint_release(
 /// Request body for `POST /coordination/checkpoint/pull`.
 #[derive(Deserialize)]
 struct CoordinationPullBody {
+    #[allow(dead_code)]
     #[serde(default)]
     standby: bool,
 }
@@ -3278,81 +3122,14 @@ struct CoordinationPullBody {
 /// is absent.
 #[post("/coordination/checkpoint/pull")]
 async fn coordination_checkpoint_pull(
-    state: WebData<ServerState>,
-    body: web::Json<CoordinationPullBody>,
+    _state: WebData<ServerState>,
+    _body: web::Json<CoordinationPullBody>,
 ) -> Result<HttpResponse, PipelineError> {
-    if matches!(state.phase(), PipelinePhase::InitializationComplete) {
-        return Err(PipelineError::ControllerError {
-            error: Arc::new(ControllerError::checkpoint_fetch_error(
-                "checkpoint pull is not allowed while the pipeline is already running".to_string(),
-            )),
-        });
-    }
-
-    let storage = state
-        .storage
-        .clone()
-        .ok_or_else(|| PipelineError::ControllerError {
-            error: Arc::new(ControllerError::checkpoint_fetch_error(
-                "checkpoint pull requires storage to be configured".to_string(),
-            )),
-        })?;
-    let sync = state
-        .sync_config
-        .clone()
-        .ok_or_else(|| PipelineError::ControllerError {
-            error: Arc::new(ControllerError::checkpoint_fetch_error(
-                "checkpoint pull requires sync to be configured".to_string(),
-            )),
-        })?;
-
-    let host_info = state.host_info;
-    let standby = body.into_inner().standby;
-
-    let pipeline =
-        state
-            .pipeline_identity
-            .clone()
-            .ok_or_else(|| PipelineError::ControllerError {
-                error: Arc::new(ControllerError::checkpoint_fetch_error(
-                    missing_pipeline_identity_message("checkpoint pull requires pipeline identity"),
-                )),
-            })?;
-
-    {
-        let mut pull_state = state.pull_state.lock().unwrap();
-        if matches!(*pull_state, CheckpointPullStatus::InProgress) {
-            return Ok(HttpResponse::Ok().finish());
-        }
-        *pull_state = CheckpointPullStatus::InProgress;
-    }
-    info!("coordination checkpoint pull: host_info={host_info:?} standby={standby}");
-
-    spawn(async move {
-        let result = spawn_blocking(move || {
-            crate::controller::sync::pull_once_with_backend(
-                storage, &sync, host_info, standby, &pipeline,
-            )
-        })
-        .await
-        .unwrap();
-
-        let new_status = match result {
-            Ok(()) => {
-                info!("coordination checkpoint pull: done");
-                CheckpointPullStatus::Ok
-            }
-            Err(e) => {
-                error!("coordination checkpoint pull failed: {e:?}");
-                CheckpointPullStatus::Error {
-                    error: e.to_string(),
-                }
-            }
-        };
-        *state.pull_state.lock().unwrap() = new_status;
-    });
-
-    Ok(HttpResponse::Accepted().finish())
+    Ok(HttpResponse::NotImplemented().json(ErrorResponse {
+        message: "coordination checkpoint pull is being re-implemented via object_store and distributed consensus".to_string(),
+        error_code: "501".into(),
+        details: serde_json::Value::Null,
+    }))
 }
 
 /// Returns the status of the most recent `POST /coordination/checkpoint/pull`.
@@ -5656,6 +5433,7 @@ mod test_with_kafka {
     use uuid::Uuid;
 
     #[actix_web::test]
+    #[ignore = "requires running Kafka/Redpanda broker"]
     async fn test_server() {
         ensure_default_crypto_provider();
 

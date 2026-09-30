@@ -483,7 +483,7 @@ pub struct ExternalGlobalControllerMetrics {
     /// True if the pipeline has processed all input data to completion.
     pub pipeline_complete: bool,
     /// Version of the platform that compiled the pipeline, such as
-    /// `0.349.0+enterprise`.
+    /// `0.349.0`.
     ///
     /// This is the platform's own version, which the compiler records in the
     /// binary.

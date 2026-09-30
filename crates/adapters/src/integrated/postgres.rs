@@ -8,7 +8,7 @@ mod tls;
 #[cfg(feature = "with-postgres-cdc")]
 pub(crate) mod cdc_input;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "with-postgres-test"))]
 mod test;
 
 pub use input::PostgresInputEndpoint;

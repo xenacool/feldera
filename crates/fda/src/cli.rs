@@ -532,7 +532,7 @@ pub enum ClusterAction {
     /// retrieved, and 2 if any service is unhealthy.
     Health,
 
-    /// Retrieve the platform configuration (edition, version, license, build information).
+    /// Retrieve the platform configuration (version, build information).
     Config,
 }
 

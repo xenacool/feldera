@@ -20,7 +20,6 @@ development = ["pg-client-config"]
 [dependencies]
 # Feldera
 feldera-types = { workspace = true }
-feldera-cloud1-client = { workspace = true }
 feldera-ir = { workspace = true }
 
 # Logging
@@ -137,8 +136,6 @@ tikv-jemallocator = { workspace = true, features = ["profiling", "unprefixed_mal
 
 [features]
 default = ["postgresql_embedded"]
-feldera-enterprise = []
-feldera-enterprise-dev = ["feldera-enterprise"]
 runtime-version = []
 fips = ["rustls/fips", "aws-lc-rs/fips", "rcgen/fips"]
 

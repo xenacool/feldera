@@ -20,17 +20,19 @@ use crate::fbuf::FBuf;
 use crate::file::FileId;
 use crate::metrics::COMMIT_ALL_LATENCY_MICROSECONDS;
 
-pub use object_store::path::{Path as StoragePath, PathPart as StoragePathPart};
+pub use ::object_store::path::{Path as StoragePath, PathPart as StoragePathPart};
 
 pub mod block;
-pub mod checkpoint_synchronizer;
 pub mod disk;
 pub mod error;
 pub mod fbuf;
 pub mod file;
 pub mod histogram;
 pub mod metrics;
+pub mod object_store;
 pub mod tokio;
+
+pub use object_store::ObjectStorageBackend;
 
 /// Helper function that appends to a [`PathBuf`].
 pub fn append_to_path(p: PathBuf, s: &str) -> PathBuf {

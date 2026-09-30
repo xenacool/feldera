@@ -814,9 +814,6 @@ pub enum ControllerError {
         backtrace: Box<Backtrace>,
     },
 
-    /// Enterprise-only feature.
-    EnterpriseFeature(&'static str),
-
     /// Cannot checkpoint or suspend.
     SuspendError(SuspendError),
 
@@ -895,7 +892,6 @@ impl ResponseError for ControllerError {
             Self::UnknownOutputEndpoint { .. } => StatusCode::NOT_FOUND,
             Self::ParseError { .. } => StatusCode::BAD_REQUEST,
             Self::NotSupported { .. } => StatusCode::BAD_REQUEST,
-            Self::EnterpriseFeature(_) => StatusCode::NOT_IMPLEMENTED,
             Self::RestoreInProgress => StatusCode::SERVICE_UNAVAILABLE,
             Self::BootstrapInProgress => StatusCode::SERVICE_UNAVAILABLE,
             Self::PipelineRestarted { .. } => StatusCode::GONE,
@@ -1031,7 +1027,6 @@ impl DbspDetailedError for ControllerError {
             Self::DbspPanic => Cow::from("DbspPanic"),
             Self::ControllerPanic => Cow::from("ControllerPanic"),
             Self::ControllerExit => Cow::from("ControllerExit"),
-            Self::EnterpriseFeature(_) => Cow::from("EnterpriseFeature"),
             Self::StorageError { .. } => Cow::from("StorageError"),
             Self::SuspendError(_) => Cow::from("SuspendError"),
             Self::UnexpectedJsonStructure { .. } => Cow::from("UnexpectedJsonStructure"),
@@ -1206,12 +1201,6 @@ impl Display for ControllerError {
             }
             Self::ControllerExit => {
                 write!(f, "Controller exited before command could be executed")
-            }
-            Self::EnterpriseFeature(feature) => {
-                write!(
-                    f,
-                    "Cannot use enterprise-only feature ({feature}) in Feldera community edition."
-                )
             }
             Self::StorageError { context, error, .. } => {
                 write!(f, "I/O error {context}: {error}")
@@ -1665,7 +1654,6 @@ impl ControllerError {
             | Self::DbspPanic
             | Self::ControllerPanic
             | Self::ControllerExit
-            | Self::EnterpriseFeature(_)
             | Self::UnexpectedJsonStructure { .. }
             | Self::UnknownEndpointInCompletionToken { .. }
             | Self::CheckpointFetchError { .. }

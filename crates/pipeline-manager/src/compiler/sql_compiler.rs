@@ -843,8 +843,6 @@ pub(crate) async fn perform_sql_compilation(
             .arg("--crates") // Generate multiple crates instead of a single main.rs
             .arg(crate_name_pipeline_base(pipeline_id));
     }
-    #[cfg(feature = "feldera-enterprise")]
-    command.arg("--enterprise");
     // Every runtime sends stdout to stdout.log. The Gen-2 IR goes to its own file through
     // `-o` rather than by hijacking stdout, so a stray byte from the JVM (a warning, an
     // `-XX` message) cannot land inside the IR and turn into an unrelated deserialization

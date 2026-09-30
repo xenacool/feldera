@@ -3826,13 +3826,10 @@ async fn cluster(format: OutputFormat, action: ClusterAction, client: Client) {
                 OutputFormat::Text => {
                     let now = Utc::now();
                     if health.stale {
-                        // The runner is a separate process only in the enterprise edition,
-                        // hence the conditional phrasing rather than an edition lookup.
                         eprintln!(
                             "Warning: no cluster monitor event for over {} minutes, so the \
-                             statuses below are the last recorded ones, not current ones. On \
-                             Feldera Enterprise, the cluster monitor runs inside the Kubernetes \
-                             runner, which may be down.",
+                             statuses below are the last recorded ones, not current ones. \
+                             The cluster monitor or runner may be down.",
                             health.stale_after_seconds / 60
                         );
                     }
@@ -3903,7 +3900,6 @@ async fn cluster(format: OutputFormat, action: ClusterAction, client: Client) {
                     // A summary without `build_info.cargo_dependencies`, which lists
                     // every crate and dwarfs the table. JSON output has all fields.
                     let value = json!({
-                        "edition": response.edition,
                         "version": response.version,
                         "revision": response.revision,
                         "runtime_revision": response.runtime_revision,
@@ -3911,8 +3907,6 @@ async fn cluster(format: OutputFormat, action: ClusterAction, client: Client) {
                         "build_timestamp": response.build_info.build_timestamp,
                         "rustc_version": response.build_info.rustc_version,
                         "cargo_target_triple": response.build_info.cargo_target_triple,
-                        "license_validity": response.license_validity,
-                        "update_info": response.update_info,
                         "unstable_features": response.unstable_features,
                         "changelog_url": response.changelog_url,
                     });

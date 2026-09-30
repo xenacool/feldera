@@ -548,9 +548,9 @@ pub(crate) trait Storage {
         dismiss_error: bool,
     ) -> Result<PipelineId, DBError>;
 
-    /// Sets deployment desired status to `Stopped` if it is not in currently `Provisioned`.
+    /// Sets deployment desired status to `Stopped` if it is not currently `Provisioned`.
     /// Returns `true` for the boolean if it was set to stopped.
-    #[allow(dead_code)] // Only used by non-forceful stop in Enterprise edition
+    #[allow(dead_code)] // Used by non-forceful stop
     async fn set_deployment_resources_desired_status_stopped_if_not_provisioned(
         &self,
         tenant_id: TenantId,

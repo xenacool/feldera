@@ -21,7 +21,6 @@ use crate::{
     },
     utils::Tup2,
 };
-use dyn_clone::DynClone;
 use std::{any::TypeId, marker::PhantomData};
 
 pub struct StarJoinFactories<I, O, T>
@@ -94,31 +93,63 @@ where
 /// values, but it cannot move the cursors, nor access weights or times.
 ///
 /// The callback is invoked 0 or more times, once for each output tuple.
-pub trait StarJoinFuncTrait<C: WithClock, I: IndexedZSet, OK: ?Sized, OV: ?Sized>:
-    FnMut(
-        &<SpineSnapshot<I> as BatchReader>::Cursor<'_>,
-        &[SaturatingCursor<'_, I::Key, I::Val, C::Time>],
-        &mut dyn FnMut(&mut OK, &mut OV),
-    ) + DynClone
-{
+pub trait StarJoinFuncTrait<C: WithClock, I: IndexedZSet, OK: ?Sized, OV: ?Sized>: 'static {
+    fn call(
+        &mut self,
+        prefix_cursor: &<SpineSnapshot<I> as BatchReader>::Cursor<'_>,
+        trace_cursors: &[SaturatingCursor<'_, I::Key, I::Val, C::Time>],
+        cb: &mut dyn FnMut(&mut OK, &mut OV),
+    );
+    fn clone_box(&self) -> Box<dyn StarJoinFuncTrait<C, I, OK, OV>>;
 }
 
-impl<C, I, OK, OV, F> StarJoinFuncTrait<C, I, OK, OV> for F
+pub fn wrap_star_join_func<C, OK, OV, F>(f: F) -> Box<dyn StarJoinFuncTrait<C, MonoIndexedZSet, OK, OV>>
 where
-    C: WithClock,
-    I: IndexedZSet,
-    OK: ?Sized,
-    OV: ?Sized,
+    C: WithClock + 'static,
+    OK: ?Sized + 'static,
+    OV: ?Sized + 'static,
     F: FnMut(
-            &<SpineSnapshot<I> as BatchReader>::Cursor<'_>,
-            &[SaturatingCursor<'_, I::Key, I::Val, C::Time>],
+            &<SpineSnapshot<MonoIndexedZSet> as BatchReader>::Cursor<'_>,
+            &[SaturatingCursor<'_, DynData, DynData, C::Time>],
             &mut dyn FnMut(&mut OK, &mut OV),
         ) + Clone
         + 'static,
 {
+    struct Closure<F>(F);
+    impl<C: WithClock + 'static, OK: ?Sized + 'static, OV: ?Sized + 'static, F>
+        StarJoinFuncTrait<C, MonoIndexedZSet, OK, OV> for Closure<F>
+    where
+        F: FnMut(
+                &<SpineSnapshot<MonoIndexedZSet> as BatchReader>::Cursor<'_>,
+                &[SaturatingCursor<'_, DynData, DynData, C::Time>],
+                &mut dyn FnMut(&mut OK, &mut OV),
+            ) + Clone
+            + 'static,
+    {
+        fn call(
+            &mut self,
+            prefix_cursor: &<SpineSnapshot<MonoIndexedZSet> as BatchReader>::Cursor<'_>,
+            trace_cursors: &[SaturatingCursor<'_, DynData, DynData, C::Time>],
+            cb: &mut dyn FnMut(&mut OK, &mut OV),
+        ) {
+            (self.0)(prefix_cursor, trace_cursors, cb)
+        }
+
+        fn clone_box(&self) -> Box<dyn StarJoinFuncTrait<C, MonoIndexedZSet, OK, OV>> {
+            Box::new(Closure(self.0.clone()))
+        }
+    }
+
+    Box::new(Closure(f))
 }
 
-dyn_clone::clone_trait_object! {<C: WithClock, I: IndexedZSet, OK: ?Sized, OV: ?Sized> StarJoinFuncTrait<C, I, OK, OV>}
+impl<C: WithClock + 'static, I: IndexedZSet, OK: ?Sized + 'static, OV: ?Sized + 'static> Clone
+    for Box<dyn StarJoinFuncTrait<C, I, OK, OV>>
+{
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
+}
 
 pub type StarJoinFunc<C, I, OK, OV> = Box<dyn StarJoinFuncTrait<C, I, OK, OV>>;
 
@@ -235,7 +266,7 @@ where
 
 impl<C, I, OK, OV> MatchFunc<C, I, OK, OV> for StarJoinMatchFunc<C, I, OK, OV>
 where
-    C: Circuit,
+    C: Circuit + 'static,
     I: IndexedZSet,
     OK: ?Sized + 'static,
     OV: ?Sized + 'static,
@@ -286,7 +317,7 @@ where
 
 impl<C, I, OK, OV> MatchGenerator<C, I, OK, OV> for StarJoinMatchGenerator<C, I, OK, OV>
 where
-    C: WithClock,
+    C: WithClock + 'static,
     I: IndexedZSet,
     OK: ?Sized + 'static,
     OV: ?Sized + 'static,
@@ -439,7 +470,7 @@ where
 impl<'a, 'b, C, I, OK, OV> MatchKeyGenerator<C, I, OK, OV>
     for StarJoinMatchIter<'a, 'b, C, I, OK, OV>
 where
-    C: WithClock,
+    C: WithClock + 'static,
     I: IndexedZSet,
     OK: ?Sized + 'static,
     OV: ?Sized + 'static,
@@ -454,7 +485,7 @@ where
                     let (w, t) = self.weight_times[self.current_index].0
                         [self.weight_times[self.current_index].1]
                         .clone();
-                    (self.join_func)(self.prefix_cursor, self.trace_cursors, &mut |k, v| {
+                    self.join_func.call(self.prefix_cursor, self.trace_cursors, &mut |k, v| {
                         cb(k, v, t.clone(), w)
                     });
                     self.advance_weight_times();

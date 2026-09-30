@@ -23,8 +23,8 @@ const MONITOR_STORE_EVENT_NUM_INTERVALS: u64 = 60;
 const MONITOR_MAX_WRITE_INTERVAL: Duration =
     Duration::from_secs(MONITOR_INTERVAL.as_secs() * MONITOR_STORE_EVENT_NUM_INTERVALS);
 
-/// An event older than this means the monitor stopped writing. In the enterprise edition it
-/// runs within the runner process, the first suspect there. Three write intervals leave room
+/// An event older than this means the monitor stopped writing. When running within
+/// the runner process, that process is the first suspect there. Three write intervals leave room
 /// for one slow iteration and a restart, so a slow cluster does not read as a dead monitor.
 pub const MONITOR_STALE_AFTER: Duration =
     Duration::from_secs(3 * MONITOR_MAX_WRITE_INTERVAL.as_secs());
@@ -46,7 +46,7 @@ const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Message when the resources information is not available.
 const RESOURCES_INFO_NOT_AVAILABLE: &str =
-    "Resources information not available in Community edition.";
+    "Resources information not available.";
 
 /// Message when the resources information gathering is not enabled.
 const RESOURCES_INFO_DISABLED: &str =

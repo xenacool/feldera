@@ -33,29 +33,13 @@ use time::{Duration, OffsetDateTime};
 use tokio_postgres_rustls::MakeRustlsConnect;
 use tracing::warn;
 
-/// The default `platform_version` is formed using three compilation environment variables:
+/// The default `platform_version` is formed using compilation environment variables:
 /// - `CARGO_PKG_VERSION` set by Cargo
-/// - `FELDERA_PLATFORM_VERSION_SUFFIX` set by the custom `build.rs` script,
-///   which is determined using the similarly named environment variable
-///
-/// ... and whether the `feldera-enterprise` or `feldera-enterprise-dev` feature is enabled.
+/// - `FELDERA_PLATFORM_VERSION_SUFFIX` set by the custom `build.rs` script
 fn default_platform_version() -> String {
     let suffix = env!("FELDERA_PLATFORM_VERSION_SUFFIX").to_string();
     let version = env!("CARGO_PKG_VERSION").to_string();
-    let enterprise_build = if cfg!(feature = "feldera-enterprise-dev") {
-        Some("enterprise-dev")
-    } else if cfg!(feature = "feldera-enterprise") {
-        Some("enterprise")
-    } else {
-        None
-    };
-    if let Some(enterprise_build) = enterprise_build {
-        if suffix.is_empty() {
-            format!("{version}+{enterprise_build}")
-        } else {
-            format!("{version}+{enterprise_build}.{suffix}")
-        }
-    } else if suffix.is_empty() {
+    if suffix.is_empty() {
         version
     } else {
         format!("{version}+{suffix}")
@@ -989,7 +973,7 @@ pub struct ApiServerConfig {
     /// 2. Issuer domain extraction (if --issuer-tenant flag is set)
     /// 3. Individual user tenant from 'sub' claim (if --individual-tenant=true)
     ///
-    /// Use --individual-tenant=false for enterprise deployments requiring explicit tenant assignment.
+    /// Use --individual-tenant=false for deployments requiring explicit tenant assignment.
     /// Use --issuer-tenant for simple multi-user access using organization domain as tenant.
     #[serde(default)]
     #[arg(long, action = clap::ArgAction::Set, env = "AUTH_PROVIDER", default_value_t=AuthProviderType::None)]
@@ -1029,27 +1013,6 @@ pub struct ApiServerConfig {
     /// If present, these will be included in the demo as well.
     #[arg(long, default_values_t = default_demos_dir())]
     pub demos_dir: Vec<String>,
-
-    /// PostHog telemetry key.
-    ///
-    /// If a key is set, anonymous usage data will be collected
-    /// and sent to our PostHog telemetry service.
-    #[arg(long, default_value = "", env = "FELDERA_TELEMETRY")]
-    pub telemetry: String,
-
-    /// ConceptualHQ analytics key.
-    ///
-    /// If set, the WebConsole loads ConceptualHQ analytics to identify the
-    /// signed-in user and track sign-in events. Leave empty to disable.
-    #[arg(long, default_value = "", env = "FELDERA_CONCEPTUALHQ")]
-    pub conceptualhq: String,
-
-    /// Product Fruits workspace code.
-    ///
-    /// If set, the WebConsole loads Product Fruits for in-app onboarding
-    /// (tours, hints, surveys). Leave empty to disable.
-    #[arg(long, default_value = "", env = "FELDERA_PRODUCT_FRUITS")]
-    pub product_fruits: String,
 
     /// Support data collection frequency (in seconds).
     ///
@@ -1355,9 +1318,6 @@ impl ApiServerConfig {
             auth_provider: crate::config::AuthProviderType::None,
             dev_mode: false,
             allowed_origins: None,
-            telemetry: "test".to_string(),
-            conceptualhq: "".to_string(),
-            product_fruits: "".to_string(),
             demos_dir: vec!["demos".to_string()],
             dump_openapi: false,
             issuer_tenant: false,
@@ -1548,9 +1508,8 @@ pub struct LocalRunnerConfig {
     /// Path to the `feldera-coordinator` executable.
     ///
     /// Required only to provision multihost pipelines (`runtime_config.hosts >
-    /// 1`).  The coordinator binary ships with the enterprise distribution; for
-    /// local development build it with `cargo build -p feldera-coordinator` and
-    /// point this at the resulting executable.  When unset, the local runner
+    /// 1`). Build it with `cargo build -p feldera-coordinator` and
+    /// point this at the resulting executable. When unset, the local runner
     /// can only provision single-host pipelines.
     #[serde(default)]
     #[arg(long, env = "FELDERA_COORDINATOR_BINARY")]
@@ -1806,24 +1765,10 @@ mod tests {
         assert!(config.validate_authorization().is_ok());
     }
 
-    /// The platform version suffix matches the edition of the build.
+    /// The platform version is non-empty.
     #[test]
-    fn platform_version_matches_edition() {
+    fn platform_version_is_valid() {
         let platform_version = default_platform_version();
-        match crate::edition() {
-            "EnterpriseDev" => assert!(
-                platform_version.contains("+enterprise-dev"),
-                "{platform_version}"
-            ),
-            "Enterprise" => assert!(
-                platform_version.contains("+enterprise") && !platform_version.contains("-dev"),
-                "{platform_version}"
-            ),
-            "Open source" => assert!(
-                !platform_version.contains("enterprise"),
-                "{platform_version}"
-            ),
-            edition => panic!("unexpected edition {edition}"),
-        }
+        assert!(!platform_version.is_empty());
     }
 }

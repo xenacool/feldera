@@ -63,9 +63,6 @@ pub enum PermanentSuspendError {
     #[error("Storage must be configured")]
     StorageRequired,
 
-    #[error("Suspend is an enterprise feature")]
-    EnterpriseFeature,
-
     #[error("Input endpoint {0:?} does not support suspend")]
     UnsupportedInputEndpoint(String),
 }

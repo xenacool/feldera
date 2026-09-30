@@ -55,55 +55,78 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .build()
             .expect("Could not use WEBCONSOLE_BUILD_DIR as a website location")
     } else {
-        let mut change_detection = ChangeDetection::exclude(|path: &Path| {
-            EXCLUDE_LIST
-            .iter()
-            .any(|exclude| path.to_str().unwrap().starts_with(exclude))
-            // Exclude js-packages project directories themselves because we mutate ignored dirs inside of them
-            || INCLUDE_LIST
-            .iter()
-            .any(|include| path.to_str().unwrap() == *include)
-        });
-
-        for include in INCLUDE_LIST.iter() {
-            change_detection = change_detection.path(*include);
-        }
-
-        change_detection.path("build.rs").generate();
-
         let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-        let out_dir_parts = out_dir.iter().collect::<Vec<_>>();
-        let rel_build_dir = out_dir_parts[out_dir_parts.len() - 2..]
-            .iter()
-            .collect::<PathBuf>();
 
-        // Nest the build directory inside web-console/build/
-        let nested_build_dir = Path::new("build").join(&rel_build_dir);
+        let bun_available = std::process::Command::new("bun")
+            .arg("--version")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
 
-        // This should be safe because the build-script is single-threaded
-        unsafe {
-            env::set_var("BUILD_DIR", nested_build_dir.clone());
-            // Bake a sentinel base path into the bundle so the manager can
-            // rewrite it to an operator-configured subpath at serve time
-            // (`--http-base-path`). This MUST match
-            // `WEBCONSOLE_BASE_PATH_PLACEHOLDER` in `src/api/main.rs`. When
-            // pre-building the bundle out-of-band (see `WEBCONSOLE_BUILD_DIR`
-            // below), set the same `WEBCONSOLE_BASE_PATH` so the cached build
-            // carries the placeholder too.
-            env::set_var("WEBCONSOLE_BASE_PATH", "/__FELDERA_BASE_PATH__");
+        if !bun_available {
+            println!("cargo:warning=bun executable not found, creating placeholder web-console static files");
+            let placeholder_dir = out_dir.join("webconsole_placeholder");
+            std::fs::create_dir_all(&placeholder_dir).expect("Failed to create placeholder dir");
+            std::fs::write(
+                placeholder_dir.join("index.html"),
+                "<html><body>Feldera Web Console placeholder (bun not installed)</body></html>",
+            )
+            .expect("Failed to write placeholder index.html");
+            let mut resource_dir = resource_dir(placeholder_dir);
+            let _ = resource_dir.with_generated_filename(out_dir.join("generated.rs"));
+            resource_dir
+                .build()
+                .expect("Failed to build placeholder resources");
+        } else {
+            let mut change_detection = ChangeDetection::exclude(|path: &Path| {
+                EXCLUDE_LIST
+                    .iter()
+                    .any(|exclude| path.to_str().unwrap().starts_with(exclude))
+                    // Exclude js-packages project directories themselves because we mutate ignored dirs inside of them
+                    || INCLUDE_LIST
+                        .iter()
+                        .any(|include| path.to_str().unwrap() == *include)
+            });
+
+            for include in INCLUDE_LIST.iter() {
+                change_detection = change_detection.path(*include);
+            }
+
+            change_detection.path("build.rs").generate();
+
+            let out_dir_parts = out_dir.iter().collect::<Vec<_>>();
+            let rel_build_dir = out_dir_parts[out_dir_parts.len() - 2..]
+                .iter()
+                .collect::<PathBuf>();
+
+            // Nest the build directory inside web-console/build/
+            let nested_build_dir = Path::new("build").join(&rel_build_dir);
+
+            // This should be safe because the build-script is single-threaded
+            unsafe {
+                env::set_var("BUILD_DIR", nested_build_dir.clone());
+                // Bake a sentinel base path into the bundle so the manager can
+                // rewrite it to an operator-configured subpath at serve time
+                // (`--http-base-path`). This MUST match
+                // `WEBCONSOLE_BASE_PATH_PLACEHOLDER` in `src/api/main.rs`. When
+                // pre-building the bundle out-of-band (see `WEBCONSOLE_BUILD_DIR`
+                // below), set the same `WEBCONSOLE_BASE_PATH` so the cached build
+                // carries the placeholder too.
+                env::set_var("WEBCONSOLE_BASE_PATH", "/__FELDERA_BASE_PATH__");
+            }
+            let asset_path: PathBuf =
+                Path::new("../../js-packages/web-console/").join(nested_build_dir);
+            let mut resource_dir = NpmBuild::new("../../js-packages/web-console")
+                .executable("bun")
+                .run("clean-install")
+                .expect("Could not run `bun clean-install`. Follow set-up instructions in js-packages/web-console/README.md")
+                .run("build")
+                .expect("Could not run `bun run build`. Run it manually in js-packages/web-console/ to debug.")
+                .target(asset_path.clone())
+                .to_resource_dir();
+            let _ = resource_dir.with_generated_filename(out_dir.join("generated.rs"));
+            resource_dir.build().expect("SvelteKit app failed to build");
         }
-        let asset_path: PathBuf =
-            Path::new("../../js-packages/web-console/").join(nested_build_dir);
-        let mut resource_dir = NpmBuild::new("../../js-packages/web-console")
-            .executable("bun")
-            .run("clean-install")
-            .expect("Could not run `bun clean-install`. Follow set-up instructions in js-packages/web-console/README.md")
-            .run("build")
-            .expect("Could not run `bun run build`. Run it manually in js-packages/web-console/ to debug.")
-            .target(asset_path.clone())
-            .to_resource_dir();
-        let _ = resource_dir.with_generated_filename(out_dir.join("generated.rs"));
-        resource_dir.build().expect("SvelteKit app failed to build");
     }
 
     // Determine whether the platform version includes a suffix

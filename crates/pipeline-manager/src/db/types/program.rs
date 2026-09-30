@@ -535,9 +535,6 @@ pub struct ProgramConfig {
     /// stable version. Compatibility is only guaranteed if platform and runtime version
     /// are exact matches.
     ///
-    /// Note that any enterprise features are currently considered to be part of
-    /// the platform.
-    ///
     /// If not set (null), the runtime version will be the same as the platform version.
     #[schema(value_type = Option<String>)]
     pub runtime_version: Option<RuntimeSelector>,

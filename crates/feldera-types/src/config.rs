@@ -1024,8 +1024,6 @@ pub struct RuntimeConfig {
     ///
     /// The worker threads are evenly divided among the hosts.  For single-host
     /// deployments, this should be 1 (the default).
-    ///
-    /// Multihost pipelines are an enterprise-only preview feature.
     pub hosts: usize,
 
     /// Storage configuration.
@@ -1173,13 +1171,12 @@ pub struct RuntimeConfig {
     /// [tracing-subscriber]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives
     pub logging: Option<String>,
 
-    /// ConfigMap containing a custom pipeline template (Enterprise only).
+    /// ConfigMap containing a custom pipeline template.
     ///
-    /// This feature is only available in Feldera Enterprise. If set, the Kubernetes runner
-    /// will read the template from the specified ConfigMap and use it instead of the default
-    /// StatefulSet template for the configured pipeline.
+    /// If set, the Kubernetes runner will read the template from the specified ConfigMap
+    /// and use it instead of the default StatefulSet template for the configured pipeline.
     ///
-    /// check [`PipelineTemplateConfig`] documentation for details.
+    /// Check [`PipelineTemplateConfig`] documentation for details.
     pub pipeline_template_configmap: Option<PipelineTemplateConfig>,
 }
 

@@ -16,18 +16,8 @@ rust-version = { workspace = true }
 
 [features]
 default = [
-    "with-kafka",
-    "with-deltalake",
-    "with-iceberg",
     "with-avro",
     "with-nexmark",
-    "with-pubsub",
-    "with-redis",
-    "with-nats",
-    "with-postgres-cdc",
-    "with-dynamodb",
-    "with-heap-profiling",
-    "with-s2",
 ]
 with-kafka = ["rdkafka"]
 # `parquet/async` + `parquet/object_store` serve only the deletion-vector
@@ -35,6 +25,7 @@ with-kafka = ["rdkafka"]
 with-deltalake = [
     "deltalake",
     "deltalake-catalog-unity",
+    "delta_kernel",
     "roaring",
     "parquet/async",
     "parquet/object_store",
@@ -53,7 +44,7 @@ with-dynamodb = [
 ]
 with-nexmark = ["dbsp_nexmark"]
 with-redis = ["redis", "r2d2"]
-with-nats = []
+with-nats = ["async-nats"]
 with-s2 = ["s2-sdk"]
 # Run delta table tests against an S3 bucket.  Requires S3 authentication key
 # to be provided via an environment variable.
@@ -68,7 +59,6 @@ pubsub-emulator-test = []
 # Run Pub/Sub connector tests agains a GCP account.
 # Google Cloud Application Default Credentials (ADC) must be configured. See `pubsub/test.rs`.
 pubsub-gcp-test = []
-feldera-enterprise = []
 iceberg-tests-fs = []
 iceberg-tests-glue = []
 iceberg-tests-rest = []
@@ -79,6 +69,7 @@ iceberg-tests-follow = []
 fips = ["rustls/fips", "aws-lc-rs/fips"]
 bench-mode = []
 with-postgres-cdc = ["etl"]
+with-postgres-test = ["with-postgres-cdc"]
 # jemalloc heap-profiling endpoint (/heap_profile). Linux-only dep; on other
 # targets the feature is a no-op.
 with-heap-profiling = ["dep:jemalloc_pprof"]
@@ -97,7 +88,7 @@ awc = { workspace = true, features = [
     "cookies",
     "rustls-0_23-webpki-roots",
 ] }
-async-nats = { workspace = true }
+async-nats = { workspace = true, optional = true }
 async-stream = { workspace = true }
 data-encoding = { workspace = true }
 anyhow = { workspace = true, features = ["backtrace"] }
@@ -123,7 +114,7 @@ csv = { workspace = true }
 # flags in the script are what preserve them. `ssl` in particular is the only
 # thing that pulled openssl-sys into the tree.
 rdkafka = { workspace = true, features = [
-    "dynamic-linking",
+    "cmake-build",
     "tokio",
 ], optional = true }
 aws-config = { workspace = true }
@@ -232,7 +223,6 @@ google-cloud-metadata = { workspace = true }
 # floor the resolver enforces cannot regress that way.
 aws-sigv4 = { version = "1.4.5", default-features = false }
 feldera-sqllib = { workspace = true }
-inventory = { workspace = true }
 backtrace = { workspace = true }
 itertools = { workspace = true }
 metrics-process = { version = "2.4.0", default-features = false }
@@ -241,7 +231,7 @@ serde_json_path_to_error = { workspace = true }
 dashmap = { workspace = true }
 parking_lot = { workspace = true }
 smallvec = { workspace = true }
-delta_kernel = { workspace = true }
+delta_kernel = { workspace = true, optional = true }
 roaring = { workspace = true, optional = true }
 etl = { workspace = true, optional = true }
 

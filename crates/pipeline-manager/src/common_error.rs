@@ -33,9 +33,6 @@ pub enum CommonError {
         serde_error: serde_json::Error,
         backtrace: Backtrace,
     },
-    EnterpriseFeature {
-        feature: String,
-    },
 }
 
 impl CommonError {
@@ -117,7 +114,6 @@ impl DetailedError for CommonError {
             Self::IoError { .. } => Cow::from("IoError"),
             Self::JsonSerializationError { .. } => Cow::from("JsonSerializationError"),
             Self::JsonDeserializationError { .. } => Cow::from("JsonDeserializationError"),
-            Self::EnterpriseFeature { .. } => Cow::from("EnterpriseFeature"),
         }
     }
 }
@@ -150,12 +146,6 @@ impl Display for CommonError {
                     "Error during JSON deserialization of {context}: {serde_error}"
                 )
             }
-            Self::EnterpriseFeature { feature } => {
-                write!(
-                    f,
-                    "Cannot use enterprise-only feature ({feature}) in Feldera community edition."
-                )
-            }
         }
     }
 }
@@ -174,7 +164,6 @@ impl ResponseError for CommonError {
             Self::IoError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             Self::JsonSerializationError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             Self::JsonDeserializationError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            Self::EnterpriseFeature { .. } => StatusCode::NOT_IMPLEMENTED,
         }
     }
 

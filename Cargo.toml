@@ -20,7 +20,6 @@ members = [
   "crates/fda",
   "crates/nexmark",
   "crates/feldera-types",
-  "crates/pipeline-manager",
   "crates/sqllib",
   "sql-to-dbsp-compiler/lib/readers",
   "crates/datagen",
@@ -35,6 +34,7 @@ members = [
   "crates/samply"
 ]
 exclude = [
+  "crates/pipeline-manager",
   "sql-to-dbsp-compiler/temp",
   "sql-to-dbsp-compiler/experiments",
   "sql-to-dbsp-compiler/multi",
@@ -189,7 +189,6 @@ fake = "2.10"
 fastbloom = "0.14.0"
 fdlimit = "0.3.0"
 feldera-buffer-cache = { version = "0.359.0", path = "crates/buffer-cache" }
-feldera-cloud1-client = "0.3.0"
 feldera-datagen = { path = "crates/datagen" }
 feldera-fxp = { version = "0.359.0", path = "crates/fxp", features = ["dbsp"] }
 feldera-iceberg = { path = "crates/iceberg" }

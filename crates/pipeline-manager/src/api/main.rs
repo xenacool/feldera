@@ -6,7 +6,6 @@ use crate::config::{ApiServerConfig, BasePath, CommonConfig};
 use crate::db::probe::DbProbe;
 use crate::db::storage_postgres::StoragePostgres;
 use crate::error::ManagerError;
-use crate::license::LicenseCheck;
 use crate::oidc::fetch::OidcClients;
 use crate::oidc::userinfo::UserProfileCache;
 use crate::runner::interaction::RunnerInteraction;
@@ -35,7 +34,7 @@ use std::{env, io, net::TcpListener, sync::Arc};
 use termbg::{Theme, theme};
 use tokio::signal;
 use tokio::sync::watch;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::Mutex;
 use tracing::{Level, error, info};
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
@@ -152,7 +151,7 @@ leading to a temporary CONFLICT (409) error.
 
 - **NOT IMPLEMENTED (501)**: the server does not implement functionality required to process the
   request.
-  - _Example:_ making a request to an enterprise-only endpoint in the OSS edition.
+  - _Example:_ requesting an unsupported feature.
   - _Client behavior:_ immediately return with an error.
 
 - **SERVICE UNAVAILABLE (503)**: the server is not (yet) able to process the request.
@@ -288,8 +287,6 @@ It contains the following fields:
         // Common
         crate::db::types::version::Version,
         crate::db::types::tenant::TenantId,
-        crate::license::LicenseValidity,
-        crate::api::endpoints::config::UpdateInformation,
         crate::api::endpoints::config::Configuration,
         crate::api::endpoints::config::BuildInformation,
         crate::api::endpoints::config::SessionInfo,
@@ -545,10 +542,6 @@ It contains the following fields:
         feldera_types::adapter_stats::PipelineState,
         feldera_types::adapter_stats::ShortEndpointConfig,
         feldera_types::adapter_stats::TransactionStatus,
-
-        // Telemetry & License
-        feldera_cloud1_client::license::DisplaySchedule,
-        feldera_cloud1_client::license::LicenseInformation,
     ),),
     tags(
         (name = "Pipeline management", description = "Create, retrieve, update, delete and deploy pipelines."),
@@ -1106,7 +1099,6 @@ pub(crate) struct ServerState {
     pub oidc_clients: OidcClients,
     probe: Arc<Mutex<DbProbe>>,
     pub demos: Vec<Demo>,
-    pub license_check: Arc<RwLock<Option<LicenseCheck>>>,
 }
 
 impl ServerState {
@@ -1114,7 +1106,6 @@ impl ServerState {
         common_config: CommonConfig,
         config: ApiServerConfig,
         db: Arc<Mutex<StoragePostgres>>,
-        license_check: Arc<RwLock<Option<LicenseCheck>>>,
     ) -> AnyResult<Self> {
         let runner = RunnerInteraction::new(common_config.clone(), db.clone());
         let db_copy = db.clone();
@@ -1132,7 +1123,6 @@ impl ServerState {
             oidc_root_certs,
             probe: DbProbe::new(db_copy).await,
             demos,
-            license_check,
         })
     }
 
@@ -1140,8 +1130,7 @@ impl ServerState {
     pub(crate) async fn test_state(db: Arc<Mutex<StoragePostgres>>) -> Self {
         let common_config = CommonConfig::test_config();
         let api_config = ApiServerConfig::test_config();
-        let license_check = Arc::new(RwLock::new(None::<LicenseCheck>));
-        Self::new(common_config, api_config, db.clone(), license_check)
+        Self::new(common_config, api_config, db.clone())
             .await
             .unwrap()
     }
@@ -1190,7 +1179,6 @@ pub async fn run(
     db: Arc<Mutex<StoragePostgres>>,
     common_config: CommonConfig,
     api_config: ApiServerConfig,
-    license_check: Arc<RwLock<Option<LicenseCheck>>>,
 ) -> AnyResult<()> {
     if let Err(reason) = api_config.validate_authorization() {
         return Err(anyhow::anyhow!(reason));
@@ -1203,7 +1191,7 @@ pub async fn run(
             )
         });
     let state = WebData::new(
-        ServerState::new(common_config.clone(), api_config.clone(), db, license_check).await?,
+        ServerState::new(common_config.clone(), api_config.clone(), db).await?,
     );
     let auth_configuration = match api_config.auth_provider {
         crate::config::AuthProviderType::None => None,
@@ -1296,11 +1284,10 @@ pub async fn run(
 Web console URL: {}
 API server URL: {}
 Documentation: https://docs.feldera.com/
-Version: {} v{}{}
+Version: v{}{}
 ",
             url,
             url,
-            crate::edition(),
             env!("CARGO_PKG_VERSION"),
             if env!("FELDERA_PLATFORM_VERSION_SUFFIX").is_empty() {
                 "".to_string()

@@ -9,13 +9,12 @@ use crate::config::{
 };
 use crate::db::storage_postgres::StoragePostgres;
 use crate::events_cleaner::events_cleaner;
-use crate::license::LicenseCheck;
 use crate::platform_enable_unstable;
 use crate::runner::main::runner_main;
 use crate::runner::pipeline_executor::PipelineExecutor;
 use clap::{ArgMatches, Args, Command, FromArgMatches};
 use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::Mutex;
 use tracing::info;
 use utoipa::OpenApi;
 
@@ -33,7 +32,6 @@ pub fn augment_args(cli: Command) -> Command {
 /// Runs the services until the api-server stops, or performs `--dump-openapi` or `--precompile`.
 pub async fn run<E: PipelineExecutor + 'static>(
     matches: &ArgMatches,
-    license_check: Arc<RwLock<Option<LicenseCheck>>>,
     runner_config: impl FnOnce(LocalRunnerConfig) -> E::Config,
 ) -> anyhow::Result<()>
 where
@@ -138,7 +136,7 @@ where
     });
 
     // The api-server blocks forever
-    crate::api::main::run(db, common_config, api_config, license_check)
+    crate::api::main::run(db, common_config, api_config)
         .await
         .expect("API server main failed");
     Ok(())

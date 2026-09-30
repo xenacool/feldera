@@ -973,7 +973,7 @@ pub async fn compiler_main(
 /// Runs the artifact-store variant of the compiler server: the full HTTP
 /// surface plus a janitor, but no SQL or Rust compilation tasks. Serves
 /// deployments where compiler workers are ephemeral and this process is the
-/// durable binary store (see enterprise compiler autoscaling).
+/// durable binary store (see compiler autoscaling).
 pub async fn artifact_server_main(
     common_config: CommonConfig,
     config: CompilerConfig,

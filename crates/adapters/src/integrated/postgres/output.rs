@@ -1408,7 +1408,7 @@ impl OutputEndpoint for PostgresOutputEndpoint {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "with-postgres-test"))]
 mod tests {
     use std::sync::Weak;
 
