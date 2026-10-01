@@ -14,10 +14,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from feldera.testutils import suite_tag
+from driftwood.testutils import suite_tag
 
 if TYPE_CHECKING:
-    from feldera.output_handler import OutputHandler
+    from driftwood.output_handler import OutputHandler
 
 
 # Environment variables naming the object stores tests use; see ObjectStore.

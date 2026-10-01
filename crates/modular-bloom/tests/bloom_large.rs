@@ -17,7 +17,7 @@
 mod bloom_common;
 
 use bloom_common::{absent, build_with, count_false_negatives, count_false_positives, flatten};
-use feldera_modular_bloom::{ModularBloomFilter, ModuleLayout};
+use driftwood_modular_bloom::{ModularBloomFilter, ModuleLayout};
 
 /// Feldera's default false positive rate.
 const DEFAULT_FP: f64 = 1e-4;

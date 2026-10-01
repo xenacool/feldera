@@ -1,6 +1,6 @@
 [package]
-name = "feldera-storage"
-description = "Storage crate for feldera"
+name = "driftwood-storage"
+description = "Storage crate for Driftwood"
 readme = "README.md"
 
 edition = "2024"

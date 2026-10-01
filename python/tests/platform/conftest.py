@@ -21,7 +21,7 @@ def pytest_configure(config):
 
     if is_master(config):
         # This runs only on the master node (or in single-node mode)
-        from feldera.testutils_oidc import setup_token_cache
+        from driftwood.testutils_oidc import setup_token_cache
 
         token_data = setup_token_cache()
         if token_data:
@@ -47,7 +47,7 @@ def oidc_token_fixture(request):
     The actual token fetching is done by pytest_configure hooks and stored
     in environment variables for cross-process access.
     """
-    from feldera.testutils_oidc import get_cached_token_from_env
+    from driftwood.testutils_oidc import get_cached_token_from_env
 
     # Token is accessed via environment variable - this fixture just verifies setup
     token_data = get_cached_token_from_env()

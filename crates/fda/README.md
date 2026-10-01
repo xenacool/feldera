@@ -1,4 +1,4 @@
 # fda
 
-A CLI tool for interacting with [Feldera](https://github.com/feldera/feldera).
-See the [fda documentation](https://docs.feldera.com/interface/cli/) for more information.
+A CLI tool for interacting with [Driftwood](https://github.com/xenacool/driftwood).
+See the [fda documentation](https://docs.driftwood.com/interface/cli/) for more information.

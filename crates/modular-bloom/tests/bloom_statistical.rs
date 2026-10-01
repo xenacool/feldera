@@ -10,7 +10,7 @@ mod bloom_common;
 use bloom_common::{
     CONFIGS, assert_within_band, build_with, count_false_negatives, count_false_positives, flatten,
 };
-use feldera_modular_bloom::{ModularBloomFilter, ModuleLayout};
+use driftwood_modular_bloom::{ModularBloomFilter, ModuleLayout};
 
 const PROBES: u64 = 200_000;
 

@@ -25,7 +25,7 @@ from typing import Any, Iterator, Optional
 
 import fastavro
 from confluent_kafka import Producer
-from feldera import Pipeline, PipelineBuilder
+from driftwood import Pipeline, PipelineBuilder
 from tests import KAFKA_BOOTSTRAP, TEST_CLIENT
 from tests.kafka import kafka_topics
 from tests.platform.helper import wait_for_condition

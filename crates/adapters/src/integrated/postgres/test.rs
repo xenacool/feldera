@@ -617,7 +617,7 @@ CREATE TABLE {name} (
     }
 
     impl Distribution<PostgresTestStruct> for Standard {
-        fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PostgresTestStruct {
+        fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> PostgresTestStruct {
             PostgresTestStruct {
                 boolean_: rng.r#gen(),
                 tinyint_: rng.r#gen(),

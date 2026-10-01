@@ -2,7 +2,7 @@
 
 import unittest
 
-from feldera import PipelineBuilder
+from driftwood import PipelineBuilder
 from tests import TEST_CLIENT
 from tests.platform.helper import PipelineTestCase, wait_for_records
 

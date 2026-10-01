@@ -1,5 +1,5 @@
 use dbsp::utils::tuple::TupleFormat;
-use feldera_sqllib::SqlString;
+use driftwood_sqllib::SqlString;
 
 feldera_macros::declare_tuple! { Tup1<T1> }
 feldera_macros::declare_tuple! { Tup2<T1, T2> }

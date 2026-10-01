@@ -3,17 +3,17 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "feldera"
+name = "driftwood"
 readme = "README.md"
-description = "The feldera python client"
+description = "The driftwood python client"
 version = "0.359.0"
 license = "MIT"
 requires-python = ">=3.10,<3.14"
 authors = [
-    { "name" = "Feldera Team", "email" = "dev@feldera.com" },
+    { "name" = "Driftwood Team", "email" = "dev@driftwood.com" },
 ]
 keywords = [
-    "feldera",
+    "driftwood",
     "python",
 ]
 classifiers = [
@@ -33,10 +33,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://www.feldera.com"
-Documentation = "https://docs.feldera.com/python"
-Repository = "https://github.com/feldera/feldera"
-Issues = "https://github.com/feldera/feldera/issues"
+Homepage = "https://www.driftwood.com"
+Documentation = "https://docs.driftwood.com/python"
+Repository = "https://github.com/xenacool/driftwood"
+Issues = "https://github.com/xenacool/driftwood/issues"
 
 [dependency-groups]
 dev = [
@@ -54,7 +54,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = "feldera"
+pythonpath = "driftwood"
 # Rerun tests that die on infra-shaped errors: the shared CI instances see
 # node replacement and pipeline pod rescheduling that no request-level retry
 # can fully absorb. The allowlist keeps reruns to transport failures and
@@ -62,7 +62,7 @@ pythonpath = "feldera"
 # still fail deterministically.
 addopts = [
     "--reruns=2",
-    "--only-rerun=FelderaCommunicationError",
+    "--only-rerun=DriftwoodCommunicationError",
     "--only-rerun=PipelineUnavailable",
     "--only-rerun=ChunkedEncodingError",
     "--only-rerun=ProtocolError",
@@ -70,7 +70,7 @@ addopts = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["feldera", "feldera.*"]
+include = ["driftwood", "driftwood.*"]
 
 [tool.uv]
 exclude-newer = "1 week"

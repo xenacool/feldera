@@ -5,11 +5,11 @@ import re
 import unittest
 from typing import Dict, TypeAlias
 
-from feldera import Pipeline, PipelineBuilder
-from feldera.enums import CompilationProfile
-from feldera.rest.errors import FelderaAPIError
-from feldera.runtime_config import Resources, RuntimeConfig
-from feldera.testutils import (
+from driftwood import Pipeline, PipelineBuilder
+from driftwood.enums import CompilationProfile
+from driftwood.rest.errors import FelderaAPIError
+from driftwood.runtime_config import Resources, RuntimeConfig
+from driftwood.testutils import (
     FELDERA_TEST_NUM_WORKERS,
     FELDERA_TEST_NUM_HOSTS,
     reclaim_pipeline,

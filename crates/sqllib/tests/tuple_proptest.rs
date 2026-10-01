@@ -12,7 +12,7 @@ use dbsp::storage::file::{
     format::BatchMetadata,
     writer::{Parameters, Writer1},
 };
-use feldera_sqllib::{
+use driftwood_sqllib::{
     Array, ByteArray, Date, GeoPoint, LongInterval, Map, ShortInterval, SqlDecimal, SqlString,
     Time, Timestamp, Uuid, Variant, to_array, to_map,
 };

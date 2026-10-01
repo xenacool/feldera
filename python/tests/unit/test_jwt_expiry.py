@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from feldera.rest._jwt import seconds_since_expiry, token_expiry
+from driftwood.rest._jwt import seconds_since_expiry, token_expiry
 
 
 def _jwt(payload: object) -> str:

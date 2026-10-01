@@ -100,11 +100,11 @@ impl TestStruct {
 }
 
 impl Distribution<TestStruct> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> TestStruct {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> TestStruct {
         TestStruct {
             id: rng.gen_range(0..(i32::MAX as u32)),
             b: rng.r#gen(),
-            i: rng.r#gen(),
+            i: if rng.r#gen() { Some(rng.r#gen()) } else { None },
             s: rng.r#gen::<u32>().to_string(),
         }
     }

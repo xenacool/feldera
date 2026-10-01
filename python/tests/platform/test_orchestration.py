@@ -1,6 +1,6 @@
 import uuid
 
-from feldera.enums import PipelineStatus
+from driftwood.enums import PipelineStatus
 from http import HTTPStatus
 
 from .helper import (
@@ -26,7 +26,7 @@ from .helper import (
     wait_for_pipeline_reachable,
     get,
 )
-from feldera.testutils import FELDERA_TEST_NUM_HOSTS
+from driftwood.testutils import FELDERA_TEST_NUM_HOSTS
 
 
 def _basic_orchestration_info(pipeline: str, table: str, connector: str):

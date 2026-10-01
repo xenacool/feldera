@@ -2,7 +2,7 @@
 (Pipeline.wait_for_completion, testutils.wait_end_of_input) report whether a
 long wait is stalled or just slow."""
 
-from feldera.stats import CommitProgressSummary, GlobalPipelineMetrics
+from driftwood.stats import CommitProgressSummary, GlobalPipelineMetrics
 
 BASE_METRICS_DICT = {
     "state": "running",

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use uuid::Uuid;
 
 use crate::make_client;
-use feldera_rest_api::types::{
+use driftwood_rest_api::types::{
     ClusterMonitorEventFieldSelector, CompilationProfile, MemberRole,
     PipelineMonitorEventFieldSelector,
 };
@@ -13,7 +13,7 @@ use feldera_rest_api::types::{
 /// Autocompletion for pipeline names by trying to fetch them from the server.
 fn pipeline_names(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
     let mut completions = vec![];
-    // Parse FELDERA_HOST / FELDERA_API_KEY from the environment.
+    // Parse DRIFTWOOD_HOST / DRIFTWOOD_API_KEY from the environment.
     let Ok(cli) = Cli::try_parse_from(["fda", "pipelines"]) else {
         return completions;
     };
@@ -56,40 +56,40 @@ fn pipeline_names(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
 #[derive(Parser)]
 #[command(
     name = "fda",
-    about = "A CLI to interact with the Feldera REST API.",
+    about = "A CLI to interact with the Driftwood REST API.",
     after_help = "Commands marked EXPERIMENTAL may change or be removed at any time.",
     version
 )]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
-    /// The format in which the outputs from feldera should be displayed.
+    /// The format in which the outputs from driftwood should be displayed.
     ///
     /// Note that this flag may have no effect on some commands in case
     /// the requested output format is not supported for it.
     #[arg(
         long,
-        env = "FELDERA_OUTPUT_FORMAT",
+        env = "DRIFTWOOD_OUTPUT_FORMAT",
         global = true,
         help_heading = "Global Options",
         default_value = "text"
     )]
     pub format: OutputFormat,
-    /// The Feldera host to connect to.
+    /// The Driftwood host to connect to.
     #[arg(
         long,
-        env = "FELDERA_HOST",
+        env = "DRIFTWOOD_HOST",
         value_hint = ValueHint::Url,
         global = true,
         help_heading = "Global Options",
-        default_value_t = String::from("https://try.feldera.com")
+        default_value_t = String::from("https://try.driftwood.com")
     )]
     pub host: String,
     /// Accept invalid HTTPS certificates.
     #[arg(
         short = 'k',
         long,
-        env = "FELDERA_TLS_INSECURE",
+        env = "DRIFTWOOD_TLS_INSECURE",
         global = true,
         default_value_t = false,
         help_heading = "Global Options"
@@ -98,13 +98,13 @@ pub struct Cli {
     /// Path to a PEM-encoded certificate to trust as an additional root
     /// certificate authority for HTTPS connections.
     ///
-    /// Useful when `fda` talks to a Feldera deployment that serves HTTPS with
+    /// Useful when `fda` talks to a Driftwood deployment that serves HTTPS with
     /// a self-signed certificate or a certificate signed by a private CA that
     /// is not in the system trust store. The file must be readable by the
     /// current user and contain one or more PEM-encoded certificates.
     #[arg(
         long = "tls-cert",
-        env = "FELDERA_HTTPS_TLS_CERT",
+        env = "DRIFTWOOD_HTTPS_TLS_CERT",
         value_hint = ValueHint::FilePath,
         global = true,
         help_heading = "Global Options",
@@ -118,7 +118,7 @@ pub struct Cli {
     /// If not specified, a request without authentication will be used.
     #[arg(
         long,
-        env = "FELDERA_API_KEY",
+        env = "DRIFTWOOD_API_KEY",
         global = true,
         hide_env_values = true,
         help_heading = "Global Options"
@@ -130,7 +130,7 @@ pub struct Cli {
     /// `Authorization: Bearer <token>` header for every request that
     /// invocation makes. Use for workload-identity flows with short-lived
     /// tokens: whatever keeps the file current (a Kubernetes projected
-    /// volume, `feldera/oidc-auth-action` in GitHub Actions) rotates the
+    /// volume, `driftwood/oidc-auth-action` in GitHub Actions) rotates the
     /// credential without `fda` holding a copy. Conflicts with `--auth`.
     ///
     /// Examples:
@@ -142,7 +142,7 @@ pub struct Cli {
     /// `--oidc-token-file "$AWS_WEB_IDENTITY_TOKEN_FILE"`
     #[arg(
         long,
-        env = "FELDERA_OIDC_TOKEN_FILE",
+        env = "DRIFTWOOD_OIDC_TOKEN_FILE",
         value_hint = ValueHint::FilePath,
         global = true,
         help_heading = "Global Options",
@@ -157,7 +157,7 @@ pub struct Cli {
     /// carries one value: naming it twice sends the later value.
     ///
     /// Use it to reach a deployment behind an authenticating proxy, which
-    /// admits a request by its own session cookie rather than by a Feldera API
+    /// admits a request by its own session cookie rather than by a Driftwood API
     /// key:
     ///
     /// `--header "Cookie: $ALB_COOKIE"`
@@ -178,7 +178,7 @@ pub struct Cli {
     /// By default, no timeout is set.
     #[arg(
         long,
-        env = "FELDERA_REQUEST_TIMEOUT",
+        env = "DRIFTWOOD_REQUEST_TIMEOUT",
         global = true,
         help_heading = "Global Options"
     )]
@@ -194,13 +194,13 @@ pub struct Cli {
     /// never reached its target. Set to 0 to disable retrying.
     #[arg(
         long,
-        env = "FELDERA_RETRIES",
+        env = "DRIFTWOOD_RETRIES",
         global = true,
         help_heading = "Global Options",
         default_value_t = 3
     )]
     pub retries: u32,
-    /// The tenant to act in, by name or id, sent as the `Feldera-Tenant`
+    /// The tenant to act in, by name or id, sent as the `Driftwood-Tenant`
     /// header on every request.
     ///
     /// Needed when the credential may act in several tenants: a platform
@@ -208,7 +208,7 @@ pub struct Cli {
     /// tenant-scoped and needs no selection.
     #[arg(
         long,
-        env = "FELDERA_TENANT",
+        env = "DRIFTWOOD_TENANT",
         global = true,
         help_heading = "Global Options"
     )]
@@ -619,13 +619,13 @@ pub enum PipelineAction {
         ///
         /// Note: This feature needs to be enabled in the platform configuration
         /// and is still in development. Use for testing purposes only.
-        #[arg(long, short = 'r', env = "FELDERA_RUNTIME_VERSION")]
+        #[arg(long, short = 'r', env = "DRIFTWOOD_RUNTIME_VERSION")]
         runtime_version: Option<String>,
         /// Whether to use the SQL compiler from the runtime or the platform.
         ///
         /// This should usually be false, which is the default.  It is only meaningful
         /// when the runtime version is set.
-        #[arg(long, env = "FELDERA_USE_PLATFORM_COMPILER", default_value_t = false)]
+        #[arg(long, env = "DRIFTWOOD_USE_PLATFORM_COMPILER", default_value_t = false)]
         use_platform_compiler: bool,
         /// The compilation profile to use.
         #[arg(default_value = "optimized")]
@@ -670,7 +670,7 @@ pub enum PipelineAction {
         name: String,
         /// Force the recompilation of the pipeline before starting.
         ///
-        /// This is useful for dev purposes in case the Feldera source-code has changed.
+        /// This is useful for dev purposes in case the Driftwood source-code has changed.
         #[arg(long, short = 'r', default_value_t = false)]
         recompile: bool,
         /// Don't wait for pipeline to reach the status before returning.
@@ -749,7 +749,7 @@ pub enum PipelineAction {
         name: String,
         /// Force the recompilation of the pipeline before starting.
         ///
-        /// This is useful for dev purposes in case the Feldera source-code has changed.
+        /// This is useful for dev purposes in case the Driftwood source-code has changed.
         #[arg(long, short = 'r', default_value_t = false)]
         recompile: bool,
         /// Checkpoint the pipeline before restarting it.
@@ -907,8 +907,8 @@ pub enum PipelineAction {
         #[arg(default_value = "")]
         tags: String,
     },
-    /// Recompile a pipeline with the Feldera runtime version included in the
-    /// currently installed Feldera platform.
+    /// Recompile a pipeline with the Driftwood runtime version included in the
+    /// currently installed Driftwood platform.
     UpdateRuntime {
         /// The name of the pipeline.
         #[arg(value_hint = ValueHint::Other, add = ArgValueCompleter::new(pipeline_names))]
@@ -1222,7 +1222,7 @@ pub(crate) struct BenchmarkArgs {
     /// Do not recompile the pipeline before starting.
     ///
     /// If set to true, one might end up with a pipeline that's not
-    /// compiled with the latest feldera runtime.
+    /// compiled with the latest driftwood runtime.
     #[arg(long, short = 'n', default_value_t = false)]
     pub no_recompile: bool,
 
@@ -1308,7 +1308,7 @@ pub enum ProgramAction {
         ///
         ///  - --runtime-version v0.100.0
         ///  - --runtime-version 2880dd6fe206d10c966cc23868ee41a3c9e4e543
-        ///    (valid git commit hash of feldera/feldera main branch)
+        ///    (valid git commit hash of xenacool/driftwood main branch)
         ///
         /// If not specified, the default version will be used.
         #[arg(verbatim_doc_comment, short = 'r', long)]
@@ -1317,7 +1317,7 @@ pub enum ProgramAction {
         ///
         /// This should usually be false, which is the default.  It is only meaningful
         /// when the runtime version is set.
-        #[arg(long, env = "FELDERA_USE_PLATFORM_COMPILER", default_value_t = false)]
+        #[arg(long, env = "DRIFTWOOD_USE_PLATFORM_COMPILER", default_value_t = false)]
         use_platform_compiler: bool,
     },
     /// Retrieve the compilation status of the program.

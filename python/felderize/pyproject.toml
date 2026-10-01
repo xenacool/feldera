@@ -5,15 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "felderize"
 readme = "README.md"
-description = "SQL dialect to Feldera SQL translator agent"
+description = "SQL dialect to Driftwood SQL translator agent"
 version = "0.359.0"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { "name" = "Feldera Team", "email" = "dev@feldera.com" },
+    { "name" = "Driftwood Team", "email" = "dev@driftwood.com" },
 ]
 keywords = [
-    "feldera",
+    "driftwood",
     "spark",
     "sql",
     "translator",
@@ -32,12 +32,12 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
-# Test/dev only. sqlglot is used by the e2e runner (Spark→Feldera data-literal
-# transpile), feldera by the e2e runner to drive a live pipeline, pyarrow by the
-# feldera SDK to read query results (pull it in explicitly so the e2e runner does
+# Test/dev only. sqlglot is used by the e2e runner (Spark→Driftwood data-literal
+# transpile), driftwood by the e2e runner to drive a live pipeline, pyarrow by the
+# driftwood SDK to read query results (pull it in explicitly so the e2e runner does
 # not fail with "No module named 'pyarrow'" when the SDK's transitive dep is absent).
 [project.optional-dependencies]
-test = ["pytest>=8", "sqlglot>=25.0.0", "feldera", "pyarrow>=14"]
+test = ["pytest>=8", "sqlglot>=25.0.0", "driftwood", "pyarrow>=14"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/unit"]
@@ -56,7 +56,7 @@ felderize = [
 felderize = "felderize.cli:cli"
 
 [project.urls]
-Homepage = "https://www.feldera.com"
-Documentation = "https://docs.feldera.com"
-Repository = "https://github.com/feldera/feldera"
-Issues = "https://github.com/feldera/feldera/issues"
+Homepage = "https://www.driftwood.com"
+Documentation = "https://docs.driftwood.com"
+Repository = "https://github.com/xenacool/driftwood"
+Issues = "https://github.com/xenacool/driftwood/issues"

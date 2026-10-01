@@ -1,7 +1,7 @@
 import unittest
 
-from feldera import PipelineBuilder
-from feldera.testutils import unique_pipeline_name
+from driftwood import PipelineBuilder
+from driftwood.testutils import unique_pipeline_name
 from tests import TEST_CLIENT
 import time
 import os

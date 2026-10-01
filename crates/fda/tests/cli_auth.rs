@@ -9,6 +9,10 @@ use std::process::{Command, Output};
 fn fda() -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_fda"));
     for var in [
+        "DRIFTWOOD_HOST",
+        "DRIFTWOOD_API_KEY",
+        "DRIFTWOOD_OIDC_TOKEN_FILE",
+        "DRIFTWOOD_AUTH_TOKEN_COMMAND",
         "FELDERA_HOST",
         "FELDERA_API_KEY",
         "FELDERA_OIDC_TOKEN_FILE",
@@ -53,8 +57,8 @@ fn auth_and_token_file_conflict_as_flags() {
 #[test]
 fn auth_and_token_file_conflict_from_env() {
     let output = fda()
-        .env("FELDERA_API_KEY", "apikey:x")
-        .env("FELDERA_OIDC_TOKEN_FILE", "/t")
+        .env("DRIFTWOOD_API_KEY", "apikey:x")
+        .env("DRIFTWOOD_OIDC_TOKEN_FILE", "/t")
         .output()
         .expect("run fda");
     assert_conflict(output);
@@ -63,11 +67,11 @@ fn auth_and_token_file_conflict_from_env() {
 #[test]
 fn removed_token_command_variable_is_called_out() {
     let output = fda()
-        .env("FELDERA_AUTH_TOKEN_COMMAND", "true")
+        .env("DRIFTWOOD_AUTH_TOKEN_COMMAND", "true")
         .output()
         .expect("run fda");
     assert!(
-        stderr(&output).contains("FELDERA_AUTH_TOKEN_COMMAND is no longer read"),
+        stderr(&output).contains("DRIFTWOOD_AUTH_TOKEN_COMMAND is no longer read"),
         "{}",
         stderr(&output)
     );
@@ -76,12 +80,12 @@ fn removed_token_command_variable_is_called_out() {
 #[test]
 fn removed_token_command_variable_is_silent_next_to_a_credential() {
     let output = fda()
-        .env("FELDERA_AUTH_TOKEN_COMMAND", "true")
-        .env("FELDERA_API_KEY", "apikey:x")
+        .env("DRIFTWOOD_AUTH_TOKEN_COMMAND", "true")
+        .env("DRIFTWOOD_API_KEY", "apikey:x")
         .output()
         .expect("run fda");
     assert!(
-        !stderr(&output).contains("FELDERA_AUTH_TOKEN_COMMAND"),
+        !stderr(&output).contains("DRIFTWOOD_AUTH_TOKEN_COMMAND"),
         "{}",
         stderr(&output)
     );

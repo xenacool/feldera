@@ -32,7 +32,7 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-from feldera.testutils import (
+from driftwood.testutils import (
     BASE_URL,
     TEST_CLIENT,
     reclaim_pipeline,

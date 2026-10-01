@@ -58,11 +58,11 @@ import warnings
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-import feldera
-from feldera import PipelineBuilder
-from feldera.enums import BootstrapPolicy, FaultToleranceModel
-from feldera.runtime_config import RuntimeConfig, Storage
-from feldera.testutils import (
+import driftwood
+from driftwood import PipelineBuilder
+from driftwood.enums import BootstrapPolicy, FaultToleranceModel
+from driftwood.runtime_config import RuntimeConfig, Storage
+from driftwood.testutils import (
     FELDERA_TEST_NUM_HOSTS,
     FELDERA_TEST_NUM_WORKERS,
     single_host_only,

@@ -17,11 +17,11 @@ every asserted `NOW()` value is an exact constant.  The test exercises:
 
 import unittest
 
-from feldera.enums import PipelineStatus
-from feldera.pipeline_builder import PipelineBuilder
-from feldera.rest.errors import FelderaAPIError
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import (
+from driftwood.enums import PipelineStatus
+from driftwood.pipeline_builder import PipelineBuilder
+from driftwood.rest.errors import FelderaAPIError
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import (
     FELDERA_TEST_NUM_HOSTS,
     FELDERA_TEST_NUM_WORKERS,
     unique_pipeline_name,

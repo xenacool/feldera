@@ -1,10 +1,10 @@
 import unittest
 
-from feldera import PipelineBuilder
+from driftwood import PipelineBuilder
 from tests.platform.helper import gen_pipeline_name
 from tests import TEST_CLIENT
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import FELDERA_TEST_NUM_WORKERS, FELDERA_TEST_NUM_HOSTS
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import FELDERA_TEST_NUM_WORKERS, FELDERA_TEST_NUM_HOSTS
 
 
 @gen_pipeline_name

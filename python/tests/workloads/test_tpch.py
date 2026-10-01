@@ -1,9 +1,9 @@
 import sys
 import time
 import unittest
-from feldera.enums import BootstrapPolicy
-from feldera.pipeline import Pipeline
-from feldera.testutils import (
+from driftwood.enums import BootstrapPolicy
+from driftwood.pipeline import Pipeline
+from driftwood.testutils import (
     IndexSpec,
     ViewSpec,
     build_pipeline,
@@ -20,7 +20,7 @@ from feldera.testutils import (
     validate_outputs,
     wait_end_of_input,
 )
-from feldera.runtime_config import Resources
+from driftwood.runtime_config import Resources
 import tempfile
 import os
 import argparse

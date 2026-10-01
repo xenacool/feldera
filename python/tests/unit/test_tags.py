@@ -1,6 +1,6 @@
 """Unit tests for the pipeline tag conventions in :mod:`feldera.tags`."""
 
-from feldera.tags import _normalize_tags, tag_display_name
+from driftwood.tags import _normalize_tags, tag_display_name
 
 
 def test_display_name_strips_color_suffix():

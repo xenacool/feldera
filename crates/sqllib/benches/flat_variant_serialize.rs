@@ -30,7 +30,7 @@ use std::time::{Duration, Instant};
 use dbsp::storage::buffer_cache::{FBuf, FBufSerializer};
 use dbsp::storage::file::{SerializerInner, to_bytes};
 use dbsp::trace::aligned_deserialize;
-use feldera_sqllib::FlatVariant;
+use driftwood_sqllib::FlatVariant;
 use rkyv::ser::Serializer as _;
 use size_of::SizeOf;
 

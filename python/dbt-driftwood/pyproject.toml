@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dbt-driftwood"
+readme = "README.md"
+description = "The dbt adapter for Driftwood — DBSP-native incremental view maintenance"
+version = "0.359.0"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { "name" = "Driftwood Team", "email" = "dev@driftwood.com" },
+    { "name" = "Raki Rahman", "email" = "mdrakiburrahman@gmail.com" },
+]
+keywords = [
+    "driftwood",
+    "dbt",
+    "incremental",
+    "streaming",
+    "dbsp",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "dbt-core~=1.11",
+    "dbt-adapters~=1.16",
+    "dbt-common~=1.12",
+    "driftwood>=0.275.0",
+    "agate>=1.9.1",
+    "sqlglot>=30.1.0",
+]
+
+[project.urls]
+Homepage = "https://www.driftwood.com"
+Documentation = "https://docs.driftwood.com"
+Repository = "https://github.com/xenacool/driftwood"
+Issues = "https://github.com/xenacool/driftwood/issues"
+
+[project.entry-points."dbt.adapters"]
+driftwood = "dbt.adapters.driftwood"
+feldera = "dbt.adapters.driftwood"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-timeout>=2.3.1",
+    "ruff==0.9.10",
+]
+test = [
+    "pytest>=9.0.3",
+    "pytest-timeout>=2.3.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "integration: marks tests that require a running Driftwood instance",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.setuptools.packages.find]
+namespaces = true
+include = ["dbt*"]
+
+[tool.setuptools.package-data]
+"dbt.include.driftwood" = ["*.yml", "macros/**/*.sql"]

@@ -3,7 +3,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from feldera.rest.errors import FelderaAPIError
+from driftwood.rest.errors import FelderaAPIError
 from tests import TEST_CLIENT
 from tests.shared_test_pipeline import SharedTestPipeline, sql
 

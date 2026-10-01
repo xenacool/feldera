@@ -2,8 +2,8 @@ import os
 import unittest
 from string import Template
 
-from feldera.runtime_config import Resources
-from feldera.testutils import run_workload, ViewSpec, unique_pipeline_name
+from driftwood.runtime_config import Resources
+from driftwood.testutils import run_workload, ViewSpec, unique_pipeline_name
 
 tables = {
     "t1": Template("""

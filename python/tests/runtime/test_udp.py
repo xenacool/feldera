@@ -1,10 +1,10 @@
 import unittest
 
-from feldera import PipelineBuilder
+from driftwood import PipelineBuilder
 from tests import TEST_CLIENT
 from tests.platform.helper import PipelineTestCase
-from feldera.runtime_config import Resources, RuntimeConfig
-from feldera.testutils import FELDERA_TEST_NUM_WORKERS, FELDERA_TEST_NUM_HOSTS
+from driftwood.runtime_config import Resources, RuntimeConfig
+from driftwood.testutils import FELDERA_TEST_NUM_WORKERS, FELDERA_TEST_NUM_HOSTS
 
 
 # Test user-defined preprocessor

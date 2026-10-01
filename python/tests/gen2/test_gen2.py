@@ -22,10 +22,10 @@ No CI job collects this directory.
 
 import pytest
 
-from feldera import PipelineBuilder
-from feldera.enums import ProgramStatus
-from feldera.pipeline import Pipeline
-from feldera.runtime_config import RuntimeConfig
+from driftwood import PipelineBuilder
+from driftwood.enums import ProgramStatus
+from driftwood.pipeline import Pipeline
+from driftwood.runtime_config import RuntimeConfig
 from tests import TEST_CLIENT, env_truthy
 from tests.platform.helper import gen_pipeline_name, wait_for_program_success
 from tests.utils import wait_for_records

@@ -13,7 +13,7 @@ use bloom_common::{
     with_modules_rotated,
 };
 use fastbloom::BloomFilter;
-use feldera_modular_bloom::{LoadError, ModularBloomFilter};
+use driftwood_modular_bloom::{LoadError, ModularBloomFilter};
 
 const PROBES: u64 = 200_000;
 
@@ -170,7 +170,7 @@ fn monolithic_words_load_and_answer_identically() {
         bare.insert_hash(present(i));
     }
 
-    let layout = feldera_modular_bloom::ModuleLayout::monolithic(hashes, words_per_module).unwrap();
+    let layout = driftwood_modular_bloom::ModuleLayout::monolithic(hashes, words_per_module).unwrap();
     let loaded = ModularBloomFilter::from_modules(layout, bare.as_slice()).unwrap();
 
     for i in 0..keys {
@@ -415,7 +415,7 @@ fn load_and_growth_errors_are_reported() {
 /// exactly that key.
 #[test]
 fn degenerate_key_counts() {
-    let layout = feldera_modular_bloom::ModuleLayout::for_keys(1_000, 1e-4, 4).unwrap();
+    let layout = driftwood_modular_bloom::ModuleLayout::for_keys(1_000, 1e-4, 4).unwrap();
 
     let empty = bloom_common::build_with(layout, 0);
     let admitted = (0..10_000)
@@ -434,10 +434,10 @@ fn degenerate_key_counts() {
 /// Repeating a key must not change the filter.
 #[test]
 fn duplicate_inserts_are_idempotent() {
-    let layout = feldera_modular_bloom::ModuleLayout::for_keys(1_000, 1e-4, 4).unwrap();
+    let layout = driftwood_modular_bloom::ModuleLayout::for_keys(1_000, 1e-4, 4).unwrap();
     let once = bloom_common::build_with(layout, 1_000);
 
-    let mut builder = feldera_modular_bloom::ModularBloomFilterBuilder::new(layout);
+    let mut builder = driftwood_modular_bloom::ModularBloomFilterBuilder::new(layout);
     for _ in 0..3 {
         for i in 0..1_000 {
             builder.insert_hash(present(i));

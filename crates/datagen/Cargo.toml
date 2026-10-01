@@ -1,5 +1,5 @@
 [package]
-name = "feldera-datagen"
+name = "driftwood-datagen"
 edition = "2024"
 version = { workspace = true }
 homepage = { workspace = true }

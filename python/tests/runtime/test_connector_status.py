@@ -3,8 +3,8 @@ from datetime import datetime
 from typing import Any
 
 from confluent_kafka import Producer
-from feldera import Pipeline, PipelineBuilder
-from feldera.stats import InputEndpointStatus, OutputEndpointStatus
+from driftwood import Pipeline, PipelineBuilder
+from driftwood.stats import InputEndpointStatus, OutputEndpointStatus
 from tests import KAFKA_BOOTSTRAP, TEST_CLIENT
 from tests.kafka import (
     create_topic,

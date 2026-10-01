@@ -5,7 +5,7 @@ from urllib.parse import quote_plus
 
 import pytest
 
-from feldera.testutils import FELDERA_TEST_NUM_HOSTS, FELDERA_TEST_NUM_WORKERS
+from driftwood.testutils import FELDERA_TEST_NUM_HOSTS, FELDERA_TEST_NUM_WORKERS
 from tests import TEST_CLIENT, enterprise_only
 from tests.platform.test_ingress_formats import create_pipeline
 from .helper import (

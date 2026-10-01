@@ -1,10 +1,10 @@
 import time
 import unittest
 
-from feldera.enums import PipelineStatus
-from feldera.pipeline import Pipeline
-from feldera.runtime_config import Resources
-from feldera.testutils import (
+from driftwood.enums import PipelineStatus
+from driftwood.pipeline import Pipeline
+from driftwood.runtime_config import Resources
+from driftwood.testutils import (
     ViewSpec,
     build_pipeline,
     log,

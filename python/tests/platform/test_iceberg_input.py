@@ -37,10 +37,10 @@ from decimal import Decimal
 
 import pytest
 
-from feldera import PipelineBuilder
-from feldera.enums import FaultToleranceModel
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import FELDERA_TEST_NUM_HOSTS, FELDERA_TEST_NUM_WORKERS
+from driftwood import PipelineBuilder
+from driftwood.enums import FaultToleranceModel
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import FELDERA_TEST_NUM_HOSTS, FELDERA_TEST_NUM_WORKERS
 from tests import TEST_CLIENT, enterprise_only
 from tests.utils import IcebergTestLocation, wait_for_condition
 

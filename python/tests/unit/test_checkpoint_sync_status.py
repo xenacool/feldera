@@ -11,8 +11,8 @@ from uuid import UUID
 
 import pytest
 
-from feldera.enums import CheckpointStatus
-from feldera.pipeline import Pipeline
+from driftwood.enums import CheckpointStatus
+from driftwood.pipeline import Pipeline
 
 # `running` is absent, `success` present, `periodic` absent, and so on: the
 # heuristic for pipelines that predate `running` orders UUIDs, so these three

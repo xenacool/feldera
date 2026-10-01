@@ -1,6 +1,6 @@
 import unittest
 
-from feldera.testutils import datafusionize
+from driftwood.testutils import datafusionize
 
 
 class TestDatafusionize(unittest.TestCase):

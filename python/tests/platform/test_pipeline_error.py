@@ -1,7 +1,7 @@
 import time
-from feldera import PipelineBuilder
-from feldera.rest.errors import FelderaAPIError
-from feldera.enums import PipelineStatus
+from driftwood import PipelineBuilder
+from driftwood.rest.errors import FelderaAPIError
+from driftwood.enums import PipelineStatus
 from .helper import (
     gen_pipeline_name,
     post_json,

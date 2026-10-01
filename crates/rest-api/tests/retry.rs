@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use feldera_rest_api::{Client, RetryPolicy};
+use driftwood_rest_api::{Client, RetryPolicy};
 use feldera_types::transport::clock::ClockAdvanceRequest;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
@@ -218,7 +218,7 @@ async fn non_idempotent_post_returns_ambiguous_503_unretried() {
         .send()
         .await;
     match response {
-        Err(feldera_rest_api::Error::ErrorResponse(e)) => {
+        Err(driftwood_rest_api::Error::ErrorResponse(e)) => {
             assert_eq!(e.error_code, "PipelineInteractionUnreachable");
         }
         other => panic!("expected ErrorResponse, got {other:?}"),

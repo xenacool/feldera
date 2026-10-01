@@ -3,7 +3,7 @@
 import logging
 from unittest import mock
 
-from feldera._long_operation_warning import LongOperationWarning
+from driftwood._long_operation_warning import LongOperationWarning
 
 
 def _make(monotonic, **kwargs):

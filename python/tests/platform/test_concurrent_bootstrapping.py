@@ -38,12 +38,12 @@ uninterrupted bootstrap.
 
 import time
 
-from feldera.enums import BootstrapPolicy, PipelineStatus
-from feldera.pipeline_builder import PipelineBuilder
-from feldera.runtime_config import RuntimeConfig
+from driftwood.enums import BootstrapPolicy, PipelineStatus
+from driftwood.pipeline_builder import PipelineBuilder
+from driftwood.runtime_config import RuntimeConfig
 from tests import TEST_CLIENT, enterprise_only
 from .helper import gen_pipeline_name
-from feldera.testutils import (
+from driftwood.testutils import (
     FELDERA_TEST_NUM_WORKERS,
     FELDERA_TEST_NUM_HOSTS,
 )

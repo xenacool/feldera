@@ -11,8 +11,8 @@ from unittest import mock
 
 import requests
 
-from feldera.pipeline import Pipeline
-from feldera.rest.errors import FelderaAPIError
+from driftwood.pipeline import Pipeline
+from driftwood.rest.errors import FelderaAPIError
 
 INCARNATION_A = "aaaaaaaa-0000-0000-0000-000000000000"
 INCARNATION_B = "bbbbbbbb-0000-0000-0000-000000000000"
@@ -221,7 +221,7 @@ class TestClientCheckpointBackwardCompat:
 
     @staticmethod
     def _client_with_mock_http():
-        from feldera.rest.feldera_client import FelderaClient
+        from driftwood.rest.feldera_client import FelderaClient
 
         with mock.patch.object(
             FelderaClient, "get_config", return_value=mock.Mock(version="x")

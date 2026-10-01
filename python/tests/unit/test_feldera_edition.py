@@ -1,4 +1,4 @@
-from feldera.rest.feldera_config import FelderaEdition
+from driftwood.rest.feldera_config import FelderaEdition
 
 
 def test_editions_parse_and_classify():

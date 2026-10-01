@@ -7,7 +7,7 @@ import pyarrow as pa
 import pyarrow.ipc as ipc
 import pytest
 
-from feldera.rest.feldera_client import FelderaClient
+from driftwood.rest.feldera_client import FelderaClient
 
 
 def _make_ipc_bytes(table: pa.Table) -> bytes:
@@ -97,7 +97,7 @@ class TestQueryAsArrow:
 class TestPipelineQueryArrow:
     def test_query_arrow_delegates_to_client(self):
         """Pipeline.query_arrow must forward to client.query_as_arrow."""
-        from feldera.pipeline import Pipeline
+        from driftwood.pipeline import Pipeline
 
         pipeline = Pipeline.__new__(Pipeline)
         pipeline._inner = MagicMock()

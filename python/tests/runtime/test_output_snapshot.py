@@ -1,11 +1,11 @@
 import json
 import time
 
-from feldera import PipelineBuilder
-from feldera.enums import BootstrapPolicy
-from feldera.pipeline import Pipeline
-from feldera.runtime_config import RuntimeConfig, Storage
-from feldera.testutils import FELDERA_TEST_NUM_WORKERS
+from driftwood import PipelineBuilder
+from driftwood.enums import BootstrapPolicy
+from driftwood.pipeline import Pipeline
+from driftwood.runtime_config import RuntimeConfig, Storage
+from driftwood.testutils import FELDERA_TEST_NUM_WORKERS
 from tests import TEST_CLIENT
 from tests.utils import DeltaTestLocation, wait_for_condition
 

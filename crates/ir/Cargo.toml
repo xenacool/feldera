@@ -1,6 +1,6 @@
 [package]
-name = "feldera-ir"
-description = "Intermediate representation types for Feldera Programs"
+name = "driftwood-ir"
+description = "Intermediate representation types for Driftwood Programs"
 keywords = ["DBSP", "calcite", "compiler", "ir"]
 categories = ["database"]
 edition = { workspace = true }

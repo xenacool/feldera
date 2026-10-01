@@ -1,26 +1,8 @@
 <h1 align="center">
-  <a href="https://feldera.com">
-    <picture>
-      <source height="125" media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/feldera/docs.feldera.com/refs/heads/main/img/logo-color-light.svg">
-      <img height="125" alt="Feldera" src="https://raw.githubusercontent.com/feldera/docs.feldera.com/refs/heads/main/img/logo.svg">
-    </picture>
-  </a>
-  <br>
+  <b>Driftwood</b>
   <br>
   <a href="https://opensource.org/licenses/MIT">
     <img src="https://img.shields.io/badge/License-MIT-green.svg">
-  </a>
-  <a href="https://github.com/feldera/feldera/actions/workflows/ci.yml">
-    <img src="https://github.com/feldera/feldera/actions/workflows/ci.yml/badge.svg?event=merge_group">
-  </a>
-  <a href="https://www.feldera.com/community">
-    <img salt="Slack" src="https://img.shields.io/badge/slack-blue.svg?logo=slack">
-  </a>
-  <a href="https://discord.gg/5YBX9Uw5u7">
-    <img alt="Discord" src="https://img.shields.io/badge/discord-blue.svg?logo=discord&logoColor=white">
-  </a>
-  <a href="https://try.feldera.com/">
-    <img alt="Sandbox" src="https://img.shields.io/badge/feldera_sandbox-blue?logo=CodeSandbox">
   </a>
   <a href="https://crates.io/crates/dbsp">
     <img alt="crates.io" src="https://img.shields.io/crates/v/dbsp.svg">
@@ -28,66 +10,82 @@
 </h1>
 
 <p align="center">
-  <em><b><a href="https://feldera.com">Feldera</a></b></em> is a fast query engine for <b>incremental computation</b>. Feldera has the <a href="#-theory">unique</a> ability to <b>evaluate arbitrary SQL programs incrementally</b>, making it more powerful, expressive and performant than existing alternatives like batch engines, warehouses, stream processors or streaming databases.
+  <em><b>Driftwood</b></em> (formerly <b>Feldera Core</b>) is a high-throughput, low-overhead distributed incremental computation and transactional streaming database engine. Driftwood evaluates arbitrary SQL programs incrementally using multiset $\mathbb{Z}$-sets (DBSP), integrated with lightweight distributed consensus (OmniPaxos configuration & monotonic epoch fencing), partitioned chain replication, and Calvin-style deterministic transactions.
 </p>
+
+---
+
+## 📌 Initial Fork & Lineage Permalink
+
+Driftwood originated as an open-core decoupling and high-availability extension of Feldera. To inspect the initial baseline fork before the Driftwood rebase:
+
+- **Initial Fork Branch**: `mit_core_refactor`
+- **Initial Fork Commit Permalink**: [`63e5b3f91957d9b61bc5cd9eeb4872746eca2cff`](https://github.com/xenacool/feldera/tree/63e5b3f91957d9b61bc5cd9eeb4872746eca2cff)
+- **Upstream Baseline**: [Feldera Open Core](https://github.com/feldera/feldera)
+
+---
+
+## 🔄 Feldera Compatibility & Architectural Evolution
+
+Driftwood maintains full functional and semantic compatibility with existing Feldera SQL queries, pipeline definitions, and data adapters while removing proprietary operational friction:
+
+| Subsystem | Upstream Feldera Legacy Behavior | Driftwood Clean-Room Architecture | Compatibility Impact |
+| :--- | :--- | :--- | :--- |
+| **Licensing & Entitlements** | License check timers (`license.rs`), trial expiration warnings, and `EnterpriseFeature` error gates on checkpoints/suspend. | **Pure MIT/Apache-2.0 Open Core**: Zero licensing shims, zero enterprise feature flags, and unrestricted checkpointing/lifecycle control. | **100% Compatible Drop-in**: All API calls succeed without enterprise license keys or trial limits. |
+| **Telemetry & Egress** | Background telemetry beacons (`feldera-cloud1-client`, PostHog, telemetry reporting threads). | **Zero Egress Privacy**: Telemetry excised entirely; operational metrics exported exclusively via standard Prometheus exposition (`/metrics`). | **Non-Breaking**: Completely transparent, with reduced background CPU overhead and zero network phone-home. |
+| **Control Plane Storage** | Relational metadata storage bound to PostgreSQL (`StoragePostgres`, `deadpool-postgres`, `refinery` migrations). | **Self-Hosted DBSP Relational Metadata**: Metadata modeled directly as multiset $\mathbb{Z}$-sets with snapshots committed to `object_store`. | **Zero External DBMS**: No PostgreSQL instance required to run the pipeline manager or cluster controller. |
+| **Checkpoint Replication** | Ad-hoc S3 polling loop (`continuous_pull`, `pull_and_gc`) coupled to closed-source plugins (`sync-checkpoint`). | **Consensus-Driven Standby & Chain Replication**: Partitioned chain replication for WALs + OmniPaxos epoch fencing ($\mathcal{E}_k$) + Apache Arrow `object_store`. | **Superior Durability**: Eliminates polling race hazards, GC sync conflicts, and split-brain dual-primary corruption. |
+| **Transactional Front-End** | HTTP/REST batch endpoints without cross-partition strict serializability. | **Partitioned PostgreSQL Wire Interface + Calvin Transactions**: Deterministic lock manager (DLM) delivering Strict Serializability (Strict-1SR). | **PostgreSQL Parity**: Connect standard `psql`, JDBC, or async PostgreSQL drivers directly. |
 
 ---
 
 ## 🔥 Incremental Computation Engine
 
-Our approach to incremental computation is simple. A Feldera `pipeline` is a set of SQL tables and views. Views can be
-deeply nested.
-Users start, stop or pause pipelines to manage and advance a computation.
-Pipelines continuously process
-**changes**, which are any number of inserts, updates or deletes to a set of tables. When the pipeline receives changes,
-Feldera **incrementally** updates all the views by only looking at the changes and it completely avoids recomputing over
-older data.
-While a pipeline is running, users can inspect the results of the views at any time.
+Our approach to incremental computation is simple. A Driftwood `pipeline` is a set of SQL tables and views. Views can be deeply nested. Users start, stop or pause pipelines to manage and advance a computation.
 
-Our approach to incremental computation makes Feldera incredibly fast (millions of events per second on a laptop).
-It also enables **unified offline and online compute** over both live and historical data. Feldera users have built batch
-and real-time
-feature engineering pipelines, ETL pipelines, various forms of incremental and periodic analytical jobs over batch data,
-and more.
+Pipelines continuously process **changes**, which are any number of inserts, updates or deletes to a set of tables. When the pipeline receives changes, Driftwood **incrementally** updates all the views by only looking at the changes and completely avoids recomputing over older data.
 
-## 🎯 Our defining Features
+While a pipeline is running, users can inspect the results of the views at any time or stream incremental updates downstream with sub-millisecond latencies.
 
-1. **Full SQL support and more.**  Our engine is the only one in existence that can evaluate full SQL
-   syntax and semantics completely incrementally. This includes joins and aggregates, group by, correlated subqueries,
-   window functions, complex data types, time series operators, UDFs, and
-   recursive queries. Pipelines can process deeply nested hierarchies of views.
+## 🎯 Defining Features
 
-2. **Fast out-of-the-box performance.**  Feldera users have reported getting complex use cases
-   implemented in 30 minutes or less, and hitting millions
-   of events per second in performance on a laptop without any tuning.
+1. **Full SQL support and more.** Evaluates full SQL syntax and semantics incrementally: joins, aggregates, `GROUP BY`, correlated subqueries, window functions, complex nested types, time-series watermarks, UDFs, and recursive queries.
+2. **Deterministic Calvin Transactions.** PostgreSQL v3.0 wire protocol frontend with deterministic lock sequencing, achieving strict serializability across distributed partitions without distributed 2PC abort cascades.
+3. **High-Availability Consensus & Partitioned Chain Replication.** OmniPaxos ensures monotonic epoch fencing ($\mathcal{E}_k$) and split-brain immunity while high-volume data streams replicate along partitioned chains ($\text{Head} \rightarrow \text{Tail}$) with sub-millisecond tail acknowledgments.
+4. **Native Object Storage Persistence.** Tiered persistence backed by Apache Arrow `object_store` (S3, MinIO, GCS, Azure Blob, and local POSIX NVMe storage) using immutable, content-addressed SST runs and atomic manifests.
+5. **Zero External DBMS Dependencies.** Control plane metadata is evaluated inside DBSP as incremental materialized views, eliminating external PostgreSQL database operational requirements.
+6. **Extensive Connectors.** Connects to Kafka, CDC streams (Postgres WAL), Apache Avro, Nexmark, Iceberg, Delta Lake, HTTP, S3, and more.
 
-3. **Datasets larger than RAM.** Feldera is designed to handle datasets
-   that exceed the available RAM by spilling efficiently to disk, taking advantage of recent advances in NVMe storage.
+## 💻 Distributed Architecture
 
-4. **Strong guarantees on consistency and freshness.** Feldera is strongly consistent. It
-   also [guarantees](https://www.feldera.com/blog/synchronous-streaming/) that the state of the views always corresponds
-   to what you'd get if you ran the queries in a batch system for the same input.
+```
++-----------------------------------------------------------------------------------+
+|                        Target Distributed Architecture                            |
+|                                                                                   |
+|  +-----------------------------------------------------------------------------+  |
+|  |             Consensus Layer: OmniPaxos (Config, Topology, Fencing)          |  |
+|  +-----------------------------------------------------------------------------+  |
+|                   |                                            |                  |
+|                   | Monotonic Epoch Fencing (\mathcal{E}_k)    |                  |
+|                   v                                            v                  |
+|  +---------------------------------+          +---------------------------------+  |
+|  | Partition 0 Replication Chain   |          | Partition 1 Replication Chain   |  |
+|  | [Head 0] -> [Node 0B] -> [Tail0]|          | [Head 1] -> [Node 1B] -> [Tail1]|  |
+|  | - Streaming Data Log (WAL)      |          | - Streaming Data Log (WAL)      |  |
+|  | - DBSP Circuit Incremental Step |          | - DBSP Circuit Incremental Step |  |
+|  | - Calvin Deterministic Locks    |          | - Calvin Deterministic Locks    |  |
+|  +---------------------------------+          +---------------------------------+  |
+|                   \                                            /                  |
+|                    \------- Stage Immutable Batch SSTs -------/                   |
+|                                         v                                         |
+|  +-----------------------------------------------------------------------------+  |
+|  |        Unified `object_store` (S3 / GCS / Azure / MinIO / Local POSIX)      |  |
+|  |   - Immutable Run SSTs (`<uuid>.dbsp`) & Checkpoint Manifests (`epoch_k.json`)|
+|  +-----------------------------------------------------------------------------+  |
++-----------------------------------------------------------------------------------+
+```
 
-5. **Connectors for your favorite data sources and destinations.** Feldera connects to myriad batch and streaming data
-   sources, like Kafka, HTTP, CDC streams, S3, Data Lakes, Warehouses and more.
-   If you need a connector that we don't yet support, [let us know](https://github.com/feldera/feldera/issues).
-
-6. **Fault tolerance**. Feldera can gracefully restart from the exact
-   point of an abrupt shutdown or crash, picking up from where it left
-   off without dropping or duplicating input or output. Fault
-   tolerance is a preview feature that requires support from input and
-   output connectors.
-
-7. **Seamless ad-hoc queries**. You can run ad-hoc SQL queries on a running or paused pipeline to inspect or debug the
-   state of materialized views. While these queries are evaluated in batch mode using Apache Datafusion, their
-   results are consistent with the incremental engine's output for the same queries, aside from minor dialect and
-   rounding differences.
-
-## 💻 Architecture
-
-The following diagram shows Feldera's architecture
-
-![Feldera Platform Architecture](architecture.svg)
+---
 
 ## ⚡️ Quick start with Docker
 

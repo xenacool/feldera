@@ -10,11 +10,11 @@ from unittest import mock
 import pytest
 import requests
 
-from feldera.rest.errors import FelderaAPIError, FelderaError
-from feldera.rest.feldera_client import FelderaClient
-from feldera.rest.logs import LogPosition
-from feldera.pipeline import Pipeline
-from feldera.rest.retry import RetryConfig
+from driftwood.rest.errors import FelderaAPIError, FelderaError
+from driftwood.rest.feldera_client import FelderaClient
+from driftwood.rest.logs import LogPosition
+from driftwood.pipeline import Pipeline
+from driftwood.rest.retry import RetryConfig
 
 _CONFIG_BODY = b'{"version": "0.0.0", "edition": "Open source"}'
 

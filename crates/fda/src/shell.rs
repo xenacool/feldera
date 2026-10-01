@@ -1,7 +1,7 @@
 use clap::Parser;
 use directories::ProjectDirs;
-use feldera_rest_api::Client;
-use feldera_types::error::ErrorResponse;
+use driftwood_rest_api::Client;
+use driftwood_types::error::ErrorResponse;
 use futures_util::StreamExt;
 use progenitor_client::ClientInfo;
 use progenitor_client::Error;
@@ -16,7 +16,7 @@ use crate::{UPGRADE_NOTICE, handle_errors_fatal, pipeline};
 
 const NEWLINE: &str = if cfg!(windows) { "\r\n" } else { "\n" };
 
-const HELP_TEXT: &str = r#"You are using fda, the command-line interface to Feldera.
+const HELP_TEXT: &str = r#"You are using fda, the command-line interface to Driftwood.
 Type:  \h for help with fda shell commands
        \? for help with SQL commands
 
@@ -72,7 +72,7 @@ pub async fn shell(format: OutputFormat, name: String, client: Client) {
 
     let mut rl = DefaultEditor::new().expect("Failed to create shell editor");
     const HISTORY_FILE: &str = "history.txt";
-    let project_dirs = ProjectDirs::from("com", "Feldera", "fda");
+    let project_dirs = ProjectDirs::from("com", "Driftwood", "fda");
     let config_dir = project_dirs
         .as_ref()
         .map(|proj_dirs| proj_dirs.config_dir());

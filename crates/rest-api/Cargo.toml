@@ -1,6 +1,6 @@
 [package]
-name = "feldera-rest-api"
-description = "REST API bindings for Feldera"
+name = "driftwood-rest-api"
+description = "REST API bindings for Driftwood"
 keywords = ["incremental", "api", "rest", "database", "sql"]
 publish = true
 categories = ["database", "api-bindings", "network-programming"]

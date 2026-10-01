@@ -1,6 +1,6 @@
 [package]
-name = "feldera-adapterlib"
-description = "Connector support for the Feldera streaming engine"
+name = "driftwood-adapterlib"
+description = "Connector support for the Driftwood streaming engine"
 categories = ["parsing"]
 authors = { workspace = true }
 version = { workspace = true }

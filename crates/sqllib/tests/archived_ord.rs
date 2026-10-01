@@ -24,7 +24,7 @@ use dbsp::storage::buffer_cache::FBuf;
 use dbsp::storage::file::to_bytes;
 use dbsp::utils::tuple::TupleFormat;
 use dbsp::utils::{Tup1, Tup2, Tup3, Tup4, Tup5, Tup8, Tup9, Tup10};
-use feldera_sqllib::{
+use driftwood_sqllib::{
     Array, ByteArray, Date, FlatVariant, GeoPoint, LongInterval, Map, ShortInterval, SqlDecimal,
     SqlString, Time, Timestamp, TimestampTz, Uuid, Variant, to_array, to_map,
 };

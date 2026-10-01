@@ -10,14 +10,14 @@ import zipfile
 
 import pandas as pd
 
-from feldera import Pipeline
-from feldera.enums import CompletionTokenStatus, PipelineFieldSelector, PipelineStatus
-from feldera.rest.errors import FelderaAPIError
-from feldera.runtime_config import RuntimeConfig
+from driftwood import Pipeline
+from driftwood.enums import CompletionTokenStatus, PipelineFieldSelector, PipelineStatus
+from driftwood.rest.errors import FelderaAPIError
+from driftwood.runtime_config import RuntimeConfig
 from tests import TEST_CLIENT, enterprise_only
 from tests.shared_test_pipeline import SharedTestPipeline
 from tests.platform.helper import http_request, API_PREFIX
-from feldera.testutils import (
+from driftwood.testutils import (
     FELDERA_TEST_NUM_WORKERS,
     FELDERA_TEST_NUM_HOSTS,
 )
@@ -792,7 +792,7 @@ class TestPipeline(SharedTestPipeline):
         self.pipeline.stop(force=True)
 
     def test_pipeline_resource_config(self):
-        from feldera.runtime_config import Resources, RuntimeConfig
+        from driftwood.runtime_config import Resources, RuntimeConfig
 
         config = {
             "cpu_cores_max": 3,

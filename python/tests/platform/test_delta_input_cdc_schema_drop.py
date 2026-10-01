@@ -16,9 +16,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from feldera import PipelineBuilder
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import FELDERA_TEST_NUM_HOSTS, FELDERA_TEST_NUM_WORKERS
+from driftwood import PipelineBuilder
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import FELDERA_TEST_NUM_HOSTS, FELDERA_TEST_NUM_WORKERS
 
 from tests import TEST_CLIENT
 from tests.utils import DeltaTestLocation, ensure_delta_spark_fixture

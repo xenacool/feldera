@@ -1,5 +1,5 @@
-use feldera_rest_api::Client;
-use feldera_rest_api::types::CompilationProfile;
+use driftwood_rest_api::Client;
+use driftwood_rest_api::types::CompilationProfile;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -82,8 +82,8 @@ struct PipelineStats {
     suspend_error: Option<Value>,
 }
 
-impl From<&feldera_rest_api::types::ControllerStatus> for RawMetrics {
-    fn from(stats: &feldera_rest_api::types::ControllerStatus) -> Self {
+impl From<&driftwood_rest_api::types::ControllerStatus> for RawMetrics {
+    fn from(stats: &driftwood_rest_api::types::ControllerStatus) -> Self {
         let global_metrics = &stats.global_metrics;
 
         // Check for input errors
@@ -353,7 +353,7 @@ async fn collect_metrics(
     pipeline_name: &str,
     duration: Option<u64>,
     needs_commit: bool,
-) -> Vec<feldera_rest_api::types::ControllerStatus> {
+) -> Vec<driftwood_rest_api::types::ControllerStatus> {
     enum PipelineStatus<T> {
         Ingesting,
         Committing(T),
@@ -442,7 +442,7 @@ async fn transform_to_bmf(
     client: &Client,
     name: String,
     format: OutputFormat,
-    metrics: Vec<feldera_rest_api::types::ControllerStatus>,
+    metrics: Vec<driftwood_rest_api::types::ControllerStatus>,
 ) -> Benchmark {
     // Convert raw JSON metrics to structured data
     let raw_metrics: Vec<RawMetrics> = metrics.iter().map(RawMetrics::from).collect();

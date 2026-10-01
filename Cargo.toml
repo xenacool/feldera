@@ -1,9 +1,9 @@
 [workspace.package]
-authors = ["Feldera Team <dev@feldera.com>"]
+authors = ["Driftwood Team <dev@driftwood.com>"]
 version = "0.359.0"
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/feldera/feldera"
-repository = "https://github.com/feldera/feldera"
+homepage = "https://github.com/xenacool/driftwood"
+repository = "https://github.com/xenacool/driftwood"
 keywords = ["ivm", "analytics", "database", "incremental", "sql"]
 readme = "README.md"
 # Define Minimum Supported Rust Version (MSRV)
@@ -15,11 +15,11 @@ members = [
   "crates/adapterlib",
   "crates/adapters",
   "crates/dbsp",
-  "crates/feldera-macros",
-  "crates/feldera-observability",
+  "crates/driftwood-macros",
+  "crates/driftwood-observability",
   "crates/fda",
   "crates/nexmark",
-  "crates/feldera-types",
+  "crates/driftwood-types",
   "crates/sqllib",
   "sql-to-dbsp-compiler/lib/readers",
   "crates/datagen",
@@ -188,20 +188,34 @@ erased-serde = "0.3.31"
 fake = "2.10"
 fastbloom = "0.14.0"
 fdlimit = "0.3.0"
-feldera-buffer-cache = { version = "0.359.0", path = "crates/buffer-cache" }
-feldera-datagen = { path = "crates/datagen" }
-feldera-fxp = { version = "0.359.0", path = "crates/fxp", features = ["dbsp"] }
-feldera-iceberg = { path = "crates/iceberg" }
-feldera-observability = { version = "0.359.0", path = "crates/feldera-observability" }
-feldera-macros = { version = "0.359.0", path = "crates/feldera-macros" }
-feldera-modular-bloom = { version = "0.359.0", path = "crates/modular-bloom" }
-feldera-sqllib = { version = "0.359.0", path = "crates/sqllib" }
-feldera-storage = { version = "0.359.0", path = "crates/storage" }
-feldera-types = { version = "0.359.0", path = "crates/feldera-types" }
-feldera-rest-api = { version = "0.359.0", path = "crates/rest-api" }
-feldera-ir = { version = "0.359.0", path = "crates/ir" }
-feldera-adapterlib = { version = "0.359.0", path = "crates/adapterlib" }
-feldera-samply = { version = "0.359.0", path = "crates/samply" }
+driftwood-buffer-cache = { version = "0.359.0", path = "crates/buffer-cache" }
+driftwood-datagen = { path = "crates/datagen" }
+driftwood-fxp = { version = "0.359.0", path = "crates/fxp", features = ["dbsp"] }
+driftwood-iceberg = { path = "crates/iceberg" }
+driftwood-observability = { version = "0.359.0", path = "crates/driftwood-observability" }
+driftwood-macros = { version = "0.359.0", path = "crates/driftwood-macros" }
+driftwood-modular-bloom = { version = "0.359.0", path = "crates/modular-bloom" }
+driftwood-sqllib = { version = "0.359.0", path = "crates/sqllib" }
+driftwood-storage = { version = "0.359.0", path = "crates/storage" }
+driftwood-types = { version = "0.359.0", path = "crates/driftwood-types" }
+driftwood-rest-api = { version = "0.359.0", path = "crates/rest-api" }
+driftwood-ir = { version = "0.359.0", path = "crates/ir" }
+driftwood-adapterlib = { version = "0.359.0", path = "crates/adapterlib" }
+driftwood-samply = { version = "0.359.0", path = "crates/samply" }
+feldera-buffer-cache = { package = "driftwood-buffer-cache", version = "0.359.0", path = "crates/buffer-cache" }
+feldera-datagen = { package = "driftwood-datagen", path = "crates/datagen" }
+feldera-fxp = { package = "driftwood-fxp", version = "0.359.0", path = "crates/fxp", features = ["dbsp"] }
+feldera-iceberg = { package = "driftwood-iceberg", path = "crates/iceberg" }
+feldera-observability = { package = "driftwood-observability", version = "0.359.0", path = "crates/driftwood-observability" }
+feldera-macros = { package = "driftwood-macros", version = "0.359.0", path = "crates/driftwood-macros" }
+feldera-modular-bloom = { package = "driftwood-modular-bloom", version = "0.359.0", path = "crates/modular-bloom" }
+feldera-sqllib = { package = "driftwood-sqllib", version = "0.359.0", path = "crates/sqllib" }
+feldera-storage = { package = "driftwood-storage", version = "0.359.0", path = "crates/storage" }
+feldera-types = { package = "driftwood-types", version = "0.359.0", path = "crates/driftwood-types" }
+feldera-rest-api = { package = "driftwood-rest-api", version = "0.359.0", path = "crates/rest-api" }
+feldera-ir = { package = "driftwood-ir", version = "0.359.0", path = "crates/ir" }
+feldera-adapterlib = { package = "driftwood-adapterlib", version = "0.359.0", path = "crates/adapterlib" }
+feldera-samply = { package = "driftwood-samply", version = "0.359.0", path = "crates/samply" }
 flate2 = "1.1.0"
 form_urlencoded = "1.2.0"
 fs_extra = "1.3.0"

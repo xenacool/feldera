@@ -30,9 +30,9 @@ import json
 from pathlib import Path
 from typing import NamedTuple
 
-from feldera import PipelineBuilder
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import (
+from driftwood import PipelineBuilder
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import (
     FELDERA_TEST_NUM_HOSTS,
     FELDERA_TEST_NUM_WORKERS,
     number_of_input_records,

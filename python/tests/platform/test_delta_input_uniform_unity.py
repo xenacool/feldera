@@ -36,9 +36,9 @@ from typing import Any
 
 import pytest
 
-from feldera import PipelineBuilder
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import FELDERA_TEST_NUM_HOSTS, FELDERA_TEST_NUM_WORKERS
+from driftwood import PipelineBuilder
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import FELDERA_TEST_NUM_HOSTS, FELDERA_TEST_NUM_WORKERS
 
 from tests import TEST_CLIENT
 from tests.platform.fixtures import unity_api, unity_uniform as fixture

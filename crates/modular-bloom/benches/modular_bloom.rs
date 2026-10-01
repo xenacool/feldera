@@ -15,8 +15,8 @@
 //! second is the honest one, because a filter for a real batch never fits.
 
 use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
+use driftwood_modular_bloom::{ModularBloomFilter, ModularBloomFilterBuilder, ModuleLayout};
 use fastbloom::BloomFilter;
-use feldera_modular_bloom::{ModularBloomFilter, ModularBloomFilterBuilder, ModuleLayout};
 
 const DEFAULT_FP: f64 = 1e-4;
 /// Fits comfortably in cache: measures hashing, not memory.

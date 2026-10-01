@@ -44,10 +44,10 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Mapping, Optional
 
-from feldera import PipelineBuilder
-from feldera.pipeline import Pipeline
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import TEST_CLIENT, log
+from driftwood import PipelineBuilder
+from driftwood.pipeline import Pipeline
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import TEST_CLIENT, log
 from tests.platform.helper import PipelineTestCase
 
 PIPELINE_SQL = "../docs.feldera.com/docs/use_cases/model_scoring/model_scoring.sql"

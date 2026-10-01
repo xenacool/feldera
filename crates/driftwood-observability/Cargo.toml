@@ -1,0 +1,19 @@
+[package]
+name = "driftwood-observability"
+description = "Shared observability utilities for Driftwood services"
+publish = true
+edition = "2024"
+version = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+chrono = { workspace = true, features = ["now"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+colored = { workspace = true }
+sysinfo = { workspace = true }

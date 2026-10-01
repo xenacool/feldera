@@ -3,7 +3,7 @@ import uuid
 import unittest
 
 from confluent_kafka import Consumer, KafkaError
-from feldera import PipelineBuilder
+from driftwood import PipelineBuilder
 from tests import KAFKA_BOOTSTRAP, TEST_CLIENT
 from tests.kafka import (
     create_topic,
@@ -12,8 +12,8 @@ from tests.kafka import (
     random_topic,
 )
 from tests.platform.helper import PipelineTestCase
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import FELDERA_TEST_NUM_WORKERS, FELDERA_TEST_NUM_HOSTS
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import FELDERA_TEST_NUM_WORKERS, FELDERA_TEST_NUM_HOSTS
 
 LIMIT = 100
 # Uncomment the following for local testing

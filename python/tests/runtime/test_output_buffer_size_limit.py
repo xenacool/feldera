@@ -19,9 +19,9 @@ size cap.
 
 import json
 
-from feldera import Pipeline, PipelineBuilder
-from feldera.runtime_config import Resources, RuntimeConfig
-from feldera.testutils import FELDERA_TEST_NUM_WORKERS
+from driftwood import Pipeline, PipelineBuilder
+from driftwood.runtime_config import Resources, RuntimeConfig
+from driftwood.testutils import FELDERA_TEST_NUM_WORKERS
 from tests import TEST_CLIENT
 from tests.utils import DeltaTestLocation, wait_for_condition
 

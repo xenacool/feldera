@@ -1,5 +1,5 @@
 [package]
-name = "feldera-buffer-cache"
+name = "driftwood-buffer-cache"
 version = { workspace = true }
 edition = "2024"
 homepage = { workspace = true }

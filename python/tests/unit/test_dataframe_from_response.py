@@ -1,6 +1,6 @@
 import unittest
 
-from feldera._helpers import dataframe_from_response
+from driftwood._helpers import dataframe_from_response
 
 
 def nullable_field(name: str, sql_type: str) -> dict:

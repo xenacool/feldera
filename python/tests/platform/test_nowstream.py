@@ -1,15 +1,15 @@
 import unittest
 import time
 
-from feldera.pipeline_builder import PipelineBuilder
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import (
+from driftwood.pipeline_builder import PipelineBuilder
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import (
     FELDERA_TEST_NUM_WORKERS,
     FELDERA_TEST_NUM_HOSTS,
 )
 from tests import TEST_CLIENT
 from tests.platform.helper import PipelineTestCase
-from feldera.enums import PipelineStatus
+from driftwood.enums import PipelineStatus
 
 
 def get_result(pipeline) -> str:

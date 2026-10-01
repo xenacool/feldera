@@ -1,5 +1,5 @@
 [package]
-name = "feldera-iceberg"
+name = "driftwood-iceberg"
 edition = { workspace = true }
 version = { workspace = true }
 homepage = { workspace = true }

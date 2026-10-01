@@ -17,7 +17,7 @@ from .helper import (
     get,
     http_request,
 )
-from feldera.testutils_oidc import (
+from driftwood.testutils_oidc import (
     skip_if_oidc_not_configured,
     get_oidc_test_helper,
 )

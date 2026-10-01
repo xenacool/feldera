@@ -15,10 +15,10 @@ in the background.
 import time
 import uuid
 
-from feldera import PipelineBuilder
-from feldera.enums import FaultToleranceModel
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import (
+from driftwood import PipelineBuilder
+from driftwood.enums import FaultToleranceModel
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import (
     FELDERA_TEST_NUM_HOSTS,
     FELDERA_TEST_NUM_WORKERS,
     enterprise_only,

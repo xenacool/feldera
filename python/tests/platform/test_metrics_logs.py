@@ -26,11 +26,11 @@ from .helper import (
 
 from tests import TEST_CLIENT
 
-from feldera.testutils import FELDERA_TEST_NUM_HOSTS
-from feldera.stats import PipelineStatistics
-from feldera.enums import PipelineStatus
-from feldera.rest.errors import FelderaAPIError
-from feldera.rest.logs import LogPosition
+from driftwood.testutils import FELDERA_TEST_NUM_HOSTS
+from driftwood.stats import PipelineStatistics
+from driftwood.enums import PipelineStatus
+from driftwood.rest.errors import FelderaAPIError
+from driftwood.rest.logs import LogPosition
 
 
 def _ingest_lines(name: str, table: str, body: str):

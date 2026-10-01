@@ -10,10 +10,10 @@ from unittest import mock
 import pytest
 import requests
 
-from feldera.rest._httprequests import HttpRequests
-from feldera.rest.config import Config
-from feldera.rest.errors import FelderaAPIError
-from feldera.rest.retry import RetryConfig
+from driftwood.rest._httprequests import HttpRequests
+from driftwood.rest.config import Config
+from driftwood.rest.errors import FelderaAPIError
+from driftwood.rest.retry import RetryConfig
 
 
 def _make_response(status_code: int, body: bytes = b"{}") -> requests.Response:

@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from feldera.rest.errors import FelderaAPIError
+from driftwood.rest.errors import FelderaAPIError
 from tests import TEST_CLIENT
 
 

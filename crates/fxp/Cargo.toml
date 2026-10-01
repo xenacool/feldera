@@ -1,5 +1,5 @@
 [package]
-name = "feldera-fxp"
+name = "driftwood-fxp"
 description = "Fixed-point decimal with fixed precision and scale"
 categories = ["mathematics"]
 authors = { workspace = true }

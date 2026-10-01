@@ -6,7 +6,7 @@
 
 #![allow(dead_code)]
 
-use feldera_modular_bloom::{ModularBloomFilter, ModularBloomFilterBuilder, ModuleLayout};
+use driftwood_modular_bloom::{ModularBloomFilter, ModularBloomFilterBuilder, ModuleLayout};
 
 /// The splitmix64 finalizer, a bijection on `u64`.
 ///

@@ -1,14 +1,14 @@
-//! A CLI App for the Feldera REST API.
+//! A CLI App for the Driftwood REST API.
 
 use chrono::Utc;
 use clap::{CommandFactory, Parser};
 use clap_complete::CompleteEnv;
-use feldera_rest_api::types::*;
-use feldera_rest_api::*;
-use feldera_types::checkpoint::CheckpointResponse;
-use feldera_types::config::{FtModel, RuntimeConfig, StorageOptions};
-use feldera_types::error::ErrorResponse;
-use feldera_types::transport::clock::ClockAdvanceRequest;
+use driftwood_rest_api::types::*;
+use driftwood_rest_api::*;
+use driftwood_types::checkpoint::CheckpointResponse;
+use driftwood_types::config::{FtModel, RuntimeConfig, StorageOptions};
+use driftwood_types::error::ErrorResponse;
+use driftwood_types::transport::clock::ClockAdvanceRequest;
 use futures_util::StreamExt;
 use json_to_table::json_to_table;
 use log::{debug, error, info, trace, warn};
@@ -38,7 +38,7 @@ mod shell;
 mod tags;
 mod util;
 
-pub(crate) const UPGRADE_NOTICE: &str = "Try upgrading to the latest CLI version to resolve this issue. Also make sure the pipeline is recompiled with the latest version of feldera. Report it on github.com/feldera/feldera if the issue persists.";
+pub(crate) const UPGRADE_NOTICE: &str = "Try upgrading to the latest CLI version to resolve this issue. Also make sure the pipeline is recompiled with the latest version of driftwood. Report it on github.com/xenacool/driftwood if the issue persists.";
 
 use crate::adhoc::handle_adhoc_query;
 use crate::cli::*;
@@ -416,8 +416,8 @@ async fn api_key_commands(format: OutputFormat, action: ApiKeyActions, client: C
         ApiKeyActions::Create { name, role } => {
             debug!("Creating API key: {}", name);
             let role = match role {
-                ApiKeyRole::Read => feldera_rest_api::types::MintableKeyRole::Read,
-                ApiKeyRole::Write => feldera_rest_api::types::MintableKeyRole::Write,
+                ApiKeyRole::Read => driftwood_rest_api::types::MintableKeyRole::Read,
+                ApiKeyRole::Write => driftwood_rest_api::types::MintableKeyRole::Write,
             };
             let response = client
                 .post_api_key()
@@ -525,9 +525,9 @@ async fn oidc_trust_commands(format: OutputFormat, action: OidcTrustActions, cli
         } => {
             debug!("Creating OIDC trust relationship: {name}");
             let role = role.map(|r| match r {
-                TrustRole::Read => feldera_rest_api::types::MemberRole::Read,
-                TrustRole::Write => feldera_rest_api::types::MemberRole::Write,
-                TrustRole::Admin => feldera_rest_api::types::MemberRole::Admin,
+                TrustRole::Read => driftwood_rest_api::types::MemberRole::Read,
+                TrustRole::Write => driftwood_rest_api::types::MemberRole::Write,
+                TrustRole::Admin => driftwood_rest_api::types::MemberRole::Admin,
             });
             let body = NewOidcTrustRequest::builder()
                 .name(name.clone())
@@ -3961,10 +3961,11 @@ fn main() {
             // exports it would otherwise send no credential and see a bare 401.
             if cli.auth.is_none()
                 && cli.oidc_token_file.is_none()
-                && std::env::var_os("FELDERA_AUTH_TOKEN_COMMAND").is_some()
+                && (std::env::var_os("DRIFTWOOD_AUTH_TOKEN_COMMAND").is_some()
+                    || std::env::var_os("FELDERA_AUTH_TOKEN_COMMAND").is_some())
             {
                 warn!(
-                    "FELDERA_AUTH_TOKEN_COMMAND is no longer read. Point FELDERA_OIDC_TOKEN_FILE at a file holding the token, or pass the command's output as --auth \"$(...)\"."
+                    "DRIFTWOOD_AUTH_TOKEN_COMMAND is no longer read. Point DRIFTWOOD_OIDC_TOKEN_FILE at a file holding the token, or pass the command's output as --auth \"$(...)\"."
                 );
             }
 
@@ -4020,7 +4021,7 @@ mod tests {
         Client, ClientInfo, ClientOpts, format_program_errors, install_crypto_provider,
         make_client, read_oidc_token_file,
     };
-    use feldera_rest_api::types::{
+    use driftwood_rest_api::types::{
         ProgramError, RustCompilationInfo, SqlCompilationInfo, SqlCompilerMessage,
     };
     use std::io::Write;

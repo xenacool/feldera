@@ -23,7 +23,7 @@ from urllib.parse import quote, quote_plus
 
 import pytest
 import requests
-from feldera.testutils import (
+from driftwood.testutils import (
     FELDERA_TEST_NUM_HOSTS,
     FELDERA_TEST_NUM_WORKERS,
     feldera_bearer_token,

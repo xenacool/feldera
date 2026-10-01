@@ -12,7 +12,7 @@ import json
 from typing import Any, Optional
 
 from confluent_kafka import Producer
-from feldera import Pipeline, PipelineBuilder
+from driftwood import Pipeline, PipelineBuilder
 from tests import KAFKA_BOOTSTRAP, TEST_CLIENT
 from tests.kafka import (
     create_topic,

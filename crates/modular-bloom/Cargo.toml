@@ -1,5 +1,5 @@
 [package]
-name = "feldera-modular-bloom"
+name = "driftwood-modular-bloom"
 version = { workspace = true }
 edition = "2024"
 homepage = { workspace = true }

@@ -1,5 +1,5 @@
 import pytest
-from feldera.testutils import unique_pipeline_name
+from driftwood.testutils import unique_pipeline_name
 from tests.platform.helper import cleanup_pipeline, reset_pipeline
 
 

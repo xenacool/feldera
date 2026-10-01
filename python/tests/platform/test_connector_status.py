@@ -1,10 +1,10 @@
 from http import HTTPStatus
 from typing import Any
 
-from feldera import Pipeline
-from feldera.enums import BootstrapPolicy, PipelineStatus
-from feldera.pipeline_builder import PipelineBuilder
-from feldera.rest.errors import FelderaAPIError
+from driftwood import Pipeline
+from driftwood.enums import BootstrapPolicy, PipelineStatus
+from driftwood.pipeline_builder import PipelineBuilder
+from driftwood.rest.errors import FelderaAPIError
 from tests import TEST_CLIENT, enterprise_only
 
 from .helper import api_url, gen_pipeline_name, get, wait_for_condition

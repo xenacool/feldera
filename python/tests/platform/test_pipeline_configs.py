@@ -1,7 +1,7 @@
 from http import HTTPStatus
 
-from feldera import PipelineBuilder
-from feldera.rest.errors import FelderaAPIError
+from driftwood import PipelineBuilder
+from driftwood.rest.errors import FelderaAPIError
 from tests import TEST_CLIENT
 from .helper import (
     API_PREFIX,

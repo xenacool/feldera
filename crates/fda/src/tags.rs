@@ -1,4 +1,4 @@
-//! Pipeline tag conventions shared across Feldera clients.
+//! Pipeline tag conventions shared across Driftwood clients.
 //!
 //! The backend stores a tag as an opaque string, validates it against a fixed
 //! character set, and knows nothing about color. A tag's color is encoded into

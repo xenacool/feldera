@@ -8,10 +8,10 @@ import warnings
 from typing import Optional
 from uuid import UUID, uuid4
 
-from feldera import Pipeline
-from feldera.enums import FaultToleranceModel, PipelineStatus
-from feldera.runtime_config import RuntimeConfig, Storage
-from feldera.testutils import (
+from driftwood import Pipeline
+from driftwood.enums import FaultToleranceModel, PipelineStatus
+from driftwood.runtime_config import RuntimeConfig, Storage
+from driftwood.testutils import (
     FELDERA_TEST_NUM_HOSTS,
     FELDERA_TEST_NUM_WORKERS,
     single_host_only,

@@ -1,6 +1,6 @@
 [package]
-name = "feldera-sqllib"
-description = "SQL runtime library for Feldera"
+name = "driftwood-sqllib"
+description = "SQL runtime library for Driftwood"
 keywords = ["DBSP", "streaming", "analytics", "database", "sql"]
 categories = ["database", "api-bindings", "network-programming"]
 publish = true

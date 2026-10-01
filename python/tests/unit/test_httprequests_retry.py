@@ -11,14 +11,14 @@ from unittest import mock
 import pytest
 import requests
 
-from feldera.rest._httprequests import HttpRequests
-from feldera.rest.config import Config
-from feldera.rest.errors import (
+from driftwood.rest._httprequests import HttpRequests
+from driftwood.rest.config import Config
+from driftwood.rest.errors import (
     FelderaAPIError,
     FelderaCommunicationError,
     FelderaTimeoutError,
 )
-from feldera.rest.retry import RetryConfig
+from driftwood.rest.retry import RetryConfig
 
 
 def _make_response(
@@ -485,7 +485,7 @@ class Test502HealthHandling:
 class TestClientMarksIdempotentEndpoints:
     @staticmethod
     def _client_with_mock_http():
-        from feldera.rest.feldera_client import FelderaClient
+        from driftwood.rest.feldera_client import FelderaClient
 
         # Skip the server-version handshake performed in __init__.
         with mock.patch.object(
@@ -513,7 +513,7 @@ class TestClientMarksIdempotentEndpoints:
 
 class TestFelderaClientAcceptsRetryConfig:
     def test_passes_retry_config_through(self):
-        from feldera.rest.feldera_client import FelderaClient
+        from driftwood.rest.feldera_client import FelderaClient
 
         rc = RetryConfig(max_retries=9, initial_backoff=0.1)
         # Skip the server-version handshake performed in __init__.

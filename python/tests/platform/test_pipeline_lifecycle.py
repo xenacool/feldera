@@ -1,11 +1,11 @@
-from feldera.enums import PipelineStatus, ProgramStatus, StorageStatus
-from feldera.rest.errors import FelderaAPIError
+from driftwood.enums import PipelineStatus, ProgramStatus, StorageStatus
+from driftwood.rest.errors import FelderaAPIError
 import time
 import pytest
 from http import HTTPStatus
-from feldera import PipelineBuilder, Pipeline
-from feldera.runtime_config import RuntimeConfig
-from feldera.enums import BootstrapPolicy
+from driftwood import PipelineBuilder, Pipeline
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.enums import BootstrapPolicy
 from tests import TEST_CLIENT
 from .helper import (
     wait_for_condition,
@@ -29,7 +29,7 @@ from .helper import (
     wait_for_pipeline_reachable,
 )
 from tests import enterprise_only
-from feldera.testutils import (
+from driftwood.testutils import (
     FELDERA_TEST_NUM_WORKERS,
     FELDERA_TEST_NUM_HOSTS,
 )

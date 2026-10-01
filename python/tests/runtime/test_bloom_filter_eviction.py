@@ -27,10 +27,10 @@ Checkpointing is enterprise-only, so this runs only against an enterprise build.
 
 import os
 
-from feldera.pipeline import Pipeline
-from feldera.pipeline_builder import PipelineBuilder
-from feldera.runtime_config import RuntimeConfig, Storage
-from feldera.testutils import (
+from driftwood.pipeline import Pipeline
+from driftwood.pipeline_builder import PipelineBuilder
+from driftwood.runtime_config import RuntimeConfig, Storage
+from driftwood.testutils import (
     FELDERA_TEST_NUM_HOSTS,
     FELDERA_TEST_NUM_WORKERS,
     log,

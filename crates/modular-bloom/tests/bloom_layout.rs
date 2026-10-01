@@ -7,7 +7,7 @@
 
 mod bloom_common;
 
-use feldera_modular_bloom::{LayoutError, ModuleLayout};
+use driftwood_modular_bloom::{LayoutError, ModuleLayout};
 
 /// A module may be as wide as its `u32` word count allows. There is no smaller
 /// ceiling: the index reduction multiplies by the word count rather than the

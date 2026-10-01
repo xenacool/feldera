@@ -7,9 +7,9 @@ use std::{
     path::Path,
 };
 
-use feldera_rest_api::Client;
-use feldera_rest_api::types::*;
-use feldera_types::config::RuntimeConfig;
+use driftwood_rest_api::Client;
+use driftwood_rest_api::types::*;
+use driftwood_types::config::RuntimeConfig;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde_json::Value;
@@ -170,7 +170,7 @@ async fn unbundle_support_bundle(
     dry_run: bool,
     client: Client,
 ) -> anyhow::Result<()> {
-    // Get current Feldera instance configuration
+    // Get current Driftwood instance configuration
     let instance_config = if !dry_run {
         match client.get_config().send().await {
             Ok(config) => {
@@ -189,7 +189,7 @@ async fn unbundle_support_bundle(
                 Some((config.version, supports_runtime_version))
             }
             Err(e) => {
-                warn!("Could not retrieve feldera platform config: {}", e);
+                warn!("Could not retrieve driftwood platform config: {}", e);
                 None
             }
         }
@@ -302,7 +302,7 @@ async fn unbundle_support_bundle(
                     && bundle_version_str != instance_version
                 {
                     warn!(
-                        "This Feldera instance does not enable `runtime_version`. Pipelines will be created using the instance's current version instead of the bundle's version, which may lead to incompatibilities or unexpected behavior. To ensure pipelines match the bundle's version, restart the platform with `FELDERA_UNSTABLE_FEATURES='runtime_version'`."
+                        "This Driftwood instance does not enable `runtime_version`. Pipelines will be created using the instance's current version instead of the bundle's version, which may lead to incompatibilities or unexpected behavior. To ensure pipelines match the bundle's version, restart the platform with `DRIFTWOOD_UNSTABLE_FEATURES='runtime_version'`."
                     );
                 }
                 None

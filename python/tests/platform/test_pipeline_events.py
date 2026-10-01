@@ -1,7 +1,7 @@
 from datetime import datetime
-from feldera import PipelineBuilder
-from feldera.enums import PipelineStatus, BootstrapPolicy
-from feldera.rest.errors import FelderaAPIError
+from driftwood import PipelineBuilder
+from driftwood.enums import PipelineStatus, BootstrapPolicy
+from driftwood.rest.errors import FelderaAPIError
 from tests import TEST_CLIENT
 from .helper import gen_pipeline_name
 

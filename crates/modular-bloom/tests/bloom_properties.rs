@@ -7,7 +7,7 @@
 mod bloom_common;
 
 use bloom_common::{absent, flatten, present};
-use feldera_modular_bloom::{ModularBloomFilter, ModularBloomFilterBuilder, ModuleLayout};
+use driftwood_modular_bloom::{ModularBloomFilter, ModularBloomFilterBuilder, ModuleLayout};
 use proptest::prelude::*;
 use std::collections::BTreeSet;
 

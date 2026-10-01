@@ -1,7 +1,7 @@
 import logging
 import os
 
-from feldera.testutils import (
+from driftwood.testutils import (
     API_KEY,
     BASE_URL,
     FELDERA_REQUESTS_VERIFY,

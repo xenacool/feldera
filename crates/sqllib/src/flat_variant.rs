@@ -118,7 +118,7 @@ pub(crate) const TAG_TIMESTAMP_TZ: u8 = 25;
 /// Values are built from JSON or from native values via `From`:
 ///
 /// ```
-/// use feldera_sqllib::FlatVariant;
+/// use driftwood_sqllib::FlatVariant;
 ///
 /// let doc: FlatVariant = serde_json::from_str(r#"{"user": {"id": 5}}"#).unwrap();
 /// assert_eq!(doc.index_string("user").index_string("id"), FlatVariant::from(5u64));
@@ -168,7 +168,7 @@ impl FlatVariant {
     /// # Examples
     ///
     /// ```
-    /// use feldera_sqllib::FlatVariant;
+    /// use driftwood_sqllib::FlatVariant;
     ///
     /// assert_eq!(FlatVariant::sql_null(), FlatVariant::default());
     /// assert_eq!(FlatVariant::sql_null().to_json_string().unwrap(), "null");
@@ -190,7 +190,7 @@ impl FlatVariant {
     /// A JSON null is a value of its own, distinct from the SQL NULL:
     ///
     /// ```
-    /// use feldera_sqllib::FlatVariant;
+    /// use driftwood_sqllib::FlatVariant;
     ///
     /// let null: FlatVariant = serde_json::from_str("null").unwrap();
     /// assert_eq!(null, FlatVariant::variant_null());
@@ -213,7 +213,7 @@ impl FlatVariant {
     /// # Examples
     ///
     /// ```
-    /// use feldera_sqllib::FlatVariant;
+    /// use driftwood_sqllib::FlatVariant;
     ///
     /// let doc: FlatVariant = serde_json::from_str(r#"{"a": 1}"#).unwrap();
     /// assert_eq!(doc.index_string("a"), FlatVariant::from(1u64));
@@ -237,7 +237,7 @@ impl FlatVariant {
     /// # Examples
     ///
     /// ```
-    /// use feldera_sqllib::FlatVariant;
+    /// use driftwood_sqllib::FlatVariant;
     ///
     /// let arr: FlatVariant = serde_json::from_str("[10, 20, 30]").unwrap();
     /// // SQL array indexes start at 1.
@@ -307,7 +307,7 @@ impl FlatVariant {
     /// # Examples
     ///
     /// ```
-    /// use feldera_sqllib::FlatVariant;
+    /// use driftwood_sqllib::FlatVariant;
     ///
     /// let doc: FlatVariant = serde_json::from_str(r#"{ "b" : 1, "a" : [true] }"#).unwrap();
     /// assert_eq!(doc.to_json_string().unwrap(), r#"{"a":[true],"b":1}"#);
@@ -2731,7 +2731,7 @@ mod tests {
                 (
                     Variant::String(SqlString::from_ref("arr")),
                     Variant::Array(
-                        vec![Variant::SqlDecimal((5, 1)), Variant::Real(1.5.into())].into(),
+                        vec![Variant::SqlDecimal((5, 1)), Variant::Real(1.5_f32.into())].into(),
                     ),
                 ),
             ]

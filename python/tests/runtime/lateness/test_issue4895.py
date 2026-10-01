@@ -1,14 +1,14 @@
 import unittest
 
-from feldera.pipeline_builder import PipelineBuilder
-from feldera.testutils import (
+from driftwood.pipeline_builder import PipelineBuilder
+from driftwood.testutils import (
     FELDERA_TEST_NUM_WORKERS,
     FELDERA_TEST_NUM_HOSTS,
 )
 from tests import TEST_CLIENT
 from tests.platform.helper import PipelineTestCase
-from feldera.enums import PipelineStatus
-from feldera.runtime_config import RuntimeConfig
+from driftwood.enums import PipelineStatus
+from driftwood.runtime_config import RuntimeConfig
 
 
 class TestIssue4895(PipelineTestCase):

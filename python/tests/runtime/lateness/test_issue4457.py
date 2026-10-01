@@ -1,11 +1,11 @@
 import unittest
 
 from pandas import Timestamp
-from feldera import PipelineBuilder
+from driftwood import PipelineBuilder
 from tests import TEST_CLIENT
 from tests.platform.helper import PipelineTestCase, wait_for_records
-from feldera.runtime_config import RuntimeConfig
-from feldera.testutils import FELDERA_TEST_NUM_WORKERS, FELDERA_TEST_NUM_HOSTS
+from driftwood.runtime_config import RuntimeConfig
+from driftwood.testutils import FELDERA_TEST_NUM_WORKERS, FELDERA_TEST_NUM_HOSTS
 
 
 class TestIssue_4457(PipelineTestCase):

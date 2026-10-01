@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from feldera.testutils import PIPELINE_NAME_MAX_LEN, variant_pipeline_name
+from driftwood.testutils import PIPELINE_NAME_MAX_LEN, variant_pipeline_name
 
 # The longest prefix `unique_pipeline_name` prepends: five characters of the
 # commit SHA, the one-character `python-multihost` suite tag, and the separator.

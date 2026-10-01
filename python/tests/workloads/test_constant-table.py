@@ -1,6 +1,6 @@
 import unittest
-from feldera.runtime_config import Resources
-from feldera.testutils import ViewSpec, run_workload, unique_pipeline_name
+from driftwood.runtime_config import Resources
+from driftwood.testutils import ViewSpec, run_workload, unique_pipeline_name
 
 # The compiler compiles `where t.company_id in <long list of constant values>` queries
 # into a join with a constant table, created using a DBSP Generator operator to produce
